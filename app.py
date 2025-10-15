@@ -619,11 +619,13 @@ def render_text_layer(draw, layer, font):
 def render_all_layers(base_image, layers):
     """Render all text layers onto base image"""
     if base_image is None:
-        return None # Return None if no base image
+        print("---! Render Error: Base image is None.")
+        return None
     if not layers:
-        return base_image.convert('RGB') # Return base image if no layers
+        return base_image.convert('RGB')
 
-    result = base_image.copy().convert('RGBA') # Work with RGBA for alpha compositing
+    print(f"--- Rendering {len(layers)} layers on a base image of size {base_image.size} ---")
+    result = base_image.copy().convert('RGBA')
     for layer in layers:
         if not layer.visible:
             continue
@@ -635,9 +637,10 @@ def render_all_layers(base_image, layers):
             render_text_layer(draw, layer, font)
             result = Image.alpha_composite(result, text_layer)
         except Exception as e:
-            print(f"Error rendering layer {layer.id}: {e}")
-    return result.convert('RGB') # Convert back to RGB for final output
-
+            print(f"---!!! CRITICAL ERROR rendering layer {layer.id}: {e} !!!---")
+    
+    print(f"--- Render finished successfully. Final image size: {result.size} ---")
+    return result.convert('RGB')
 # ============================================
 # IMAGE GENERATION FUNCTIONS
 # ============================================
@@ -878,15 +881,22 @@ def create_interface():
 
                     # Add text
                     def add_text(base, layers, next_id, hist, txt, fnt, sz, tcol, ocol, ow, shad, blur, glow, opac, x, y):
+                        print(f"--- Triggered 'add_text' for layer {next_id} ---")
                         if not base:
-                            return layers, next_id, hist, format_layers(layers), None, "❌ Load image first"
+                            return layers, next_id, hist, format_layers(layers), gr.update(), "❌ Load image first"
                         if not txt.strip():
-                            return layers, next_id, hist, format_layers(layers), None, "❌ Enter text"
+                            return layers, next_id, hist, format_layers(layers), gr.update(), "❌ Enter text"
 
                         hist = (hist + [copy.deepcopy(layers)])[-20:]
                         new_layer = TextLayer(next_id, txt, fnt, int(sz), tcol, int(x), int(y), int(ow), ocol, shad, int(blur), glow, int(opac), True)
                         layers = layers + [new_layer]
                         result = render_all_layers(base, layers)
+                        
+                        if result:
+                            print(f"--- 'add_text' successful. Returning new image. ---")
+                        else:
+                            print(f"---! 'add_text' failed. Render result was None. ---")
+                        
                         return layers, next_id + 1, hist, format_layers(layers), result, f"✅ Added Layer {next_id}"
 
                     add_btn.click(
@@ -899,7 +909,7 @@ def create_interface():
                     # Remove last
                     def remove_last(base, layers, hist):
                         if not layers:
-                            return layers, hist, format_layers(layers), None, "⚠️ No layers"
+                            return layers, hist, format_layers(layers), gr.update(), "⚠️ No layers"
                         hist = (hist + [copy.deepcopy(layers)])[-20:]
                         layers = layers[:-1]
                         result = render_all_layers(base, layers)
@@ -914,7 +924,7 @@ def create_interface():
                     # Undo
                     def undo(base, layers, hist):
                         if not hist:
-                            return layers, hist, format_layers(layers), None, "⚠️ Nothing to undo"
+                            return layers, hist, format_layers(layers), gr.update(), "⚠️ Nothing to undo"
                         layers = copy.deepcopy(hist[-1])
                         hist = hist[:-1]
                         result = render_all_layers(base, layers)
@@ -1154,7 +1164,6 @@ def create_interface():
 
     return demo
 
-
 # ============================================
 # LAUNCH
 # ============================================
@@ -1194,5 +1203,6 @@ if __name__ == "__main__":
     demo = create_interface()
     # Changed server_port to 8000 as requested
     demo.launch(server_name="0.0.0.0", server_port=8000)
+
 
 
