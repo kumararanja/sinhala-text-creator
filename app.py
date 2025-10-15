@@ -786,7 +786,7 @@ def create_interface():
                     history = gr.State([])
 
                     with gr.Row():
-                        with gr.Column():
+                        with gr.Column(scale=2):
                             load_btn = gr.Button("🔄 Load Image", variant="primary", size="lg")
                             preview = gr.Image(label="Click to position", type="pil")
 
@@ -796,20 +796,19 @@ def create_interface():
 
                             status = gr.Textbox(label="Status")
 
-                        with gr.Column():
+                        with gr.Column(scale=1):
                             text_input = gr.Textbox(label="Text", lines=2)
-                            preset = gr.Dropdown(["Custom"] + list(PRESETS.keys()), value="Bold & Readable")
+                            preset = gr.Dropdown(["Custom"] + list(PRESETS.keys()), value="Bold & Readable", label="Style Preset")
 
                             with gr.Row():
-                                # Updated to use the dynamically loaded fonts_available
                                 font = gr.Dropdown(list(fonts_available.keys()), value=list(fonts_available.keys())[0] if fonts_available else "", label="Font Style")
-                                font_size = gr.Slider(20, 200, 60, label="Font Size")
+                                font_size = gr.Slider(20, 300, 60, label="Font Size")
 
                             with gr.Row():
                                 text_color = gr.ColorPicker("#FFFFFF", label="Text Color")
                                 outline_color = gr.ColorPicker("#000000", label="Outline Color")
 
-                            outline_w = gr.Slider(0, 20, 10, label="Outline Width")
+                            outline_w = gr.Slider(0, 30, 10, label="Outline Width")
 
                             with gr.Row():
                                 add_shadow = gr.Checkbox(True, label="Add Shadow")
@@ -820,11 +819,46 @@ def create_interface():
 
                             add_btn = gr.Button("➕ ADD TEXT", variant="primary", size="lg")
 
-                            layers_list = gr.Textbox(label="Layers", lines=4)
+                            layers_list = gr.Textbox(label="Layers", lines=4, interactive=False)
 
                             with gr.Row():
                                 remove_last_btn = gr.Button("🔙 Remove Last")
                                 undo_btn = gr.Button("↩️ Undo")
+
+                    # --- NEW LOGIC TO CONNECT PRESETS TO CONTROLS ---
+
+                    def apply_preset(preset_name):
+                        if preset_name == "Custom" or preset_name not in PRESETS:
+                            return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
+
+                        settings = PRESETS[preset_name]
+                        return (
+                            gr.update(value=settings["text_color"]),
+                            gr.update(value=settings["outline_color"]),
+                            gr.update(value=settings["outline_width"]),
+                            gr.update(value=settings["shadow_blur"]),
+                            gr.update(value=settings["add_shadow"]),
+                            gr.update(value=settings["add_glow"])
+                        )
+
+                    preset.change(
+                        apply_preset,
+                        [preset],
+                        [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow]
+                    )
+
+                    def set_to_custom():
+                        return gr.update(value="Custom")
+
+                    manual_controls = [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow, font_size, font]
+                    for control in manual_controls:
+                        # Use .release for sliders to avoid too many events, .change for others
+                        if isinstance(control, gr.Slider):
+                            control.release(set_to_custom, None, [preset])
+                        else:
+                            control.change(set_to_custom, None, [preset])
+
+                    # --- END OF NEW LOGIC ---
 
                     # Load image
                     load_btn.click(
@@ -1019,93 +1053,104 @@ def create_interface():
                             [export_file, export_message]
                         )
 
-            # EVENT HANDLERS
-            # Register
-            def handle_register(email, pwd, pwd2):
-                if pwd != pwd2:
-                    return None, "❌ Passwords don't match", gr.update(), gr.update(), gr.update(value=""), gr.update(value="")
-                success, msg = register_user(email, pwd)
-                if success:
-                    return None, msg, gr.update(visible=False), gr.update(visible=True), gr.update(value=""), gr.update(value="") # Hide auth, show main app
-                return None, msg, gr.update(), gr.update(), gr.update(value=""), gr.update(value="") # Stay on auth, clear passwords
-
-            reg_btn.click(
-                handle_register,
-                [reg_email, reg_password, reg_password2],
-                [user_state, reg_msg, auth_section, main_app, reg_password, reg_password2]
-            )
-
-            # Login
-            def handle_login(email, pwd):
-                success, msg, user_info = login_user(email, pwd)
-                if success:
+        # EVENT HANDLERS
+        # Register
+        def handle_register(email, pwd, pwd2):
+            if pwd != pwd2:
+                return None, "❌ Passwords don't match", gr.update(), gr.update(), gr.update(value=""), gr.update(value="")
+            success, msg = register_user(email, pwd)
+            if success:
+                # Log the user in automatically after successful registration
+                login_success, login_msg, user_info = login_user(email, pwd)
+                if login_success:
                     stats = get_user_stats(user_info['id'])
                     return (
-                        user_info,
-                        f"**Status:** ✅ {email}",
+                        user_info, 
+                        f"**Status:** ✅ {email}", 
                         stats,
-                        gr.update(visible=False),
-                        gr.update(visible=True),
-                        msg,
-                        gr.update(value=""), # Clear login email
-                        gr.update(value="") # Clear login password
+                        gr.update(visible=False), 
+                        gr.update(visible=True), 
+                        "✅ Account created & logged in!"
                     )
-                return None, "**Status:** Not logged in", "", gr.update(), gr.update(), msg, gr.update(), gr.update()
+            return None, msg, gr.update(), gr.update(), gr.update(value=""), gr.update(value="")
 
-            login_btn.click(
-                handle_login,
-                [login_email, login_password],
-                [user_state, login_status, stats_display, auth_section, main_app, login_msg, login_email, login_password]
-            )
+        reg_btn.click(
+            handle_register,
+            [reg_email, reg_password, reg_password2],
+            [user_state, login_status, stats_display, auth_section, main_app, login_msg]
+        )
 
-            # Logout
-            def handle_logout():
+        # Login
+        def handle_login(email, pwd):
+            success, msg, user_info = login_user(email, pwd)
+            if success:
+                stats = get_user_stats(user_info['id'])
                 return (
-                    None,
-                    "**Status:** Logged out",
-                    "",
-                    gr.update(visible=True),
+                    user_info,
+                    f"**Status:** ✅ {email}",
+                    stats,
                     gr.update(visible=False),
-                    "👋 Logged out"
+                    gr.update(visible=True),
+                    msg,
+                    gr.update(value=""), # Clear login email
+                    gr.update(value="") # Clear login password
                 )
+            return None, "**Status:** Not logged in", "", gr.update(), gr.update(), msg, gr.update(), gr.update()
 
-            logout_btn.click(
-                handle_logout,
+        login_btn.click(
+            handle_login,
+            [login_email, login_password],
+            [user_state, login_status, stats_display, auth_section, main_app, login_msg, login_email, login_password]
+        )
+
+        # Logout
+        def handle_logout():
+            return (
                 None,
-                [user_state, login_status, stats_display, auth_section, main_app, login_msg]
+                "**Status:** Logged out",
+                "",
+                gr.update(visible=True),
+                gr.update(visible=False),
+                "👋 Logged out"
             )
 
-            # Upload
-            upload_btn.click(
-                process_uploaded_image,
-                [upload_img],
-                [img_display, img_status]
-            )
+        logout_btn.click(
+            handle_logout,
+            None,
+            [user_state, login_status, stats_display, auth_section, main_app, login_msg]
+        )
 
-            # Generate
-            def gen_and_update_stats(prompt, size, user_info):
-                img, msg = generate_image_with_auth(prompt, size, user_info)
-                if user_info:
-                    stats = get_user_stats(user_info['id'])
-                    return img, msg, stats
-                return img, msg, ""
+        # Upload
+        upload_btn.click(
+            process_uploaded_image,
+            [upload_img],
+            [img_display, img_status]
+        )
 
-            gen_btn.click(
-                gen_and_update_stats,
-                [prompt, size, user_state],
-                [img_display, img_status, stats_display]
-            )
+        # Generate
+        def gen_and_update_stats(prompt, size, user_info):
+            img, msg = generate_image_with_auth(prompt, size, user_info)
+            if user_info:
+                stats = get_user_stats(user_info['id'])
+                return img, msg, stats
+            return img, msg, ""
 
-            gr.Markdown("""
-            ---
-            ### ✨ Features
-            - 🆓 5 FREE AI generations per month
-            - 📤 Unlimited uploads (FREE!)
-            - ✍️ Unlimited text overlays (FREE!)
-            - 🔄 Auto-resets monthly
-            """)
+        gen_btn.click(
+            gen_and_update_stats,
+            [prompt, size, user_state],
+            [img_display, img_status, stats_display]
+        )
 
-        return demo
+        gr.Markdown("""
+        ---
+        ### ✨ Features
+        - 🆓 5 FREE AI generations per month
+        - 📤 Unlimited uploads (FREE!)
+        - ✍️ Unlimited text overlays (FREE!)
+        - 🔄 Auto-resets monthly
+        """)
+
+    return demo
 
 # ============================================
 # LAUNCH
@@ -1146,3 +1191,4 @@ if __name__ == "__main__":
     demo = create_interface()
     # Changed server_port to 8000 as requested
     demo.launch(server_name="0.0.0.0", server_port=8000)
+
