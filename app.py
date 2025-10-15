@@ -824,21 +824,21 @@ def create_interface():
                             with gr.Row():
                                 remove_last_btn = gr.Button("🔙 Remove Last")
                                 undo_btn = gr.Button("↩️ Undo")
-
-                    # --- NEW LOGIC TO CONNECT PRESETS TO CONTROLS ---
+                    
+                    # --- LOGIC TO CONNECT PRESETS TO CONTROLS ---
 
                     def apply_preset(preset_name):
                         if preset_name == "Custom" or preset_name not in PRESETS:
                             return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
-
+                        
                         settings = PRESETS[preset_name]
                         return (
-                            gr.update(value=settings["text_color"]),
-                            gr.update(value=settings["outline_color"]),
-                            gr.update(value=settings["outline_width"]),
-                            gr.update(value=settings["shadow_blur"]),
-                            gr.update(value=settings["add_shadow"]),
-                            gr.update(value=settings["add_glow"])
+                            settings["text_color"],
+                            settings["outline_color"],
+                            settings["outline_width"],
+                            settings["shadow_blur"],
+                            settings["add_shadow"],
+                            settings["add_glow"]
                         )
 
                     preset.change(
@@ -848,17 +848,16 @@ def create_interface():
                     )
 
                     def set_to_custom():
-                        return gr.update(value="Custom")
-
+                        return "Custom"
+                    
                     manual_controls = [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow, font_size, font]
                     for control in manual_controls:
-                        # Use .release for sliders to avoid too many events, .change for others
                         if isinstance(control, gr.Slider):
-                            control.release(set_to_custom, None, [preset])
+                            control.release(set_to_custom, None, preset)
                         else:
-                            control.change(set_to_custom, None, [preset])
-
-                    # --- END OF NEW LOGIC ---
+                            control.change(set_to_custom, None, preset)
+                            
+                    # --- END OF LOGIC ---
 
                     # Load image
                     load_btn.click(
@@ -986,24 +985,24 @@ def create_interface():
                                     gr.update(visible=False),
                                     "❌ Please enter password",
                                     gr.update(),
-                                    gr.update(value="", interactive=True), # Keep password field for re-entry
+                                    gr.update(value="", interactive=True),
                                     ""
                                 )
 
                             if check_admin_password(password):
                                 stats = get_admin_stats()
                                 return (
-                                    gr.update(visible=True), # Show admin panel
+                                    gr.update(visible=True),
                                     "✅ Access granted!",
-                                    stats, # Show stats
-                                    gr.update(value="", interactive=False), # Clear and disable password field
+                                    stats,
+                                    gr.update(value="", interactive=False),
                                     ""
                                 )
                             return (
-                                gr.update(visible=False), # Hide admin panel
+                                gr.update(visible=False),
                                 "❌ Invalid password",
                                 "Enter password to view stats",
-                                gr.update(value="", interactive=True), # Clear password field
+                                gr.update(value="", interactive=True),
                                 ""
                             )
 
@@ -1016,11 +1015,11 @@ def create_interface():
                         # Admin logout
                         def admin_logout():
                             return (
-                                gr.update(visible=False), # Hide panel
+                                gr.update(visible=False),
                                 "👋 Logged out from admin",
                                 "Enter password to view stats",
-                                gr.update(visible=False), # Hide export file
-                                gr.update(value="", interactive=True), # Make password field interactive again
+                                gr.update(visible=False),
+                                gr.update(value="", interactive=True),
                                 ""
                             )
 
@@ -1057,27 +1056,29 @@ def create_interface():
         # Register
         def handle_register(email, pwd, pwd2):
             if pwd != pwd2:
-                return None, "❌ Passwords don't match", gr.update(), gr.update(), gr.update(value=""), gr.update(value="")
+                return (None, "**Status:** Not logged in", "", gr.update(), gr.update(), "❌ Passwords don't match")
+            
             success, msg = register_user(email, pwd)
             if success:
-                # Log the user in automatically after successful registration
+                # Automatically log in after successful registration
                 login_success, login_msg, user_info = login_user(email, pwd)
                 if login_success:
                     stats = get_user_stats(user_info['id'])
                     return (
-                        user_info, 
-                        f"**Status:** ✅ {email}", 
+                        user_info,
+                        f"**Status:** ✅ {email}",
                         stats,
-                        gr.update(visible=False), 
-                        gr.update(visible=True), 
+                        gr.update(visible=False),
+                        gr.update(visible=True),
                         "✅ Account created & logged in!"
                     )
-            return None, msg, gr.update(), gr.update(), gr.update(value=""), gr.update(value="")
+            # If registration or auto-login fails
+            return (None, "**Status:** Not logged in", "", gr.update(), gr.update(), msg)
 
         reg_btn.click(
             handle_register,
             [reg_email, reg_password, reg_password2],
-            [user_state, login_status, stats_display, auth_section, main_app, login_msg]
+            [user_state, login_status, stats_display, auth_section, main_app, reg_msg]
         )
 
         # Login
@@ -1092,10 +1093,11 @@ def create_interface():
                     gr.update(visible=False),
                     gr.update(visible=True),
                     msg,
-                    gr.update(value=""), # Clear login email
-                    gr.update(value="") # Clear login password
+                    "", # Clear login email
+                    ""  # Clear login password
                 )
-            return None, "**Status:** Not logged in", "", gr.update(), gr.update(), msg, gr.update(), gr.update()
+            # If login fails
+            return (None, "**Status:** Not logged in", "", gr.update(), gr.update(), msg, email, "")
 
         login_btn.click(
             handle_login,
@@ -1152,6 +1154,7 @@ def create_interface():
 
     return demo
 
+
 # ============================================
 # LAUNCH
 # ============================================
@@ -1191,4 +1194,5 @@ if __name__ == "__main__":
     demo = create_interface()
     # Changed server_port to 8000 as requested
     demo.launch(server_name="0.0.0.0", server_port=8000)
+
 
