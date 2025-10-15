@@ -827,39 +827,27 @@ def create_interface():
                             with gr.Row():
                                 remove_last_btn = gr.Button("🔙 Remove Last")
                                 undo_btn = gr.Button("↩️ Undo")
-                    
-                    # --- LOGIC TO CONNECT PRESETS TO CONTROLS ---
 
+                    # --- SIMPLIFIED PRESET LOGIC ---
                     def apply_preset(preset_name):
-                        if preset_name == "Custom" or preset_name not in PRESETS:
-                            return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
-                        
-                        settings = PRESETS[preset_name]
-                        return (
-                            settings["text_color"],
-                            settings["outline_color"],
-                            settings["outline_width"],
-                            settings["shadow_blur"],
-                            settings["add_shadow"],
-                            settings["add_glow"]
-                        )
+                        if preset_name in PRESETS:
+                            settings = PRESETS[preset_name]
+                            return (
+                                settings["text_color"],
+                                settings["outline_color"],
+                                settings["outline_width"],
+                                settings["shadow_blur"],
+                                settings["add_shadow"],
+                                settings["add_glow"]
+                            )
+                        # If "Custom" is selected, do nothing and let user values remain
+                        return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
 
                     preset.change(
                         apply_preset,
                         [preset],
                         [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow]
                     )
-
-                    def set_to_custom():
-                        return "Custom"
-                    
-                    manual_controls = [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow, font_size, font]
-                    for control in manual_controls:
-                        if isinstance(control, gr.Slider):
-                            control.release(set_to_custom, None, preset)
-                        else:
-                            control.change(set_to_custom, None, preset)
-                            
                     # --- END OF LOGIC ---
 
                     # Load image
@@ -881,22 +869,15 @@ def create_interface():
 
                     # Add text
                     def add_text(base, layers, next_id, hist, txt, fnt, sz, tcol, ocol, ow, shad, blur, glow, opac, x, y):
-                        print(f"--- Triggered 'add_text' for layer {next_id} ---")
                         if not base:
-                            return layers, next_id, hist, format_layers(layers), gr.update(), "❌ Load image first"
+                            return layers, next_id, hist, format_layers(layers), None, "❌ Load image first"
                         if not txt.strip():
-                            return layers, next_id, hist, format_layers(layers), gr.update(), "❌ Enter text"
+                            return layers, next_id, hist, format_layers(layers), None, "❌ Enter text"
 
                         hist = (hist + [copy.deepcopy(layers)])[-20:]
                         new_layer = TextLayer(next_id, txt, fnt, int(sz), tcol, int(x), int(y), int(ow), ocol, shad, int(blur), glow, int(opac), True)
                         layers = layers + [new_layer]
                         result = render_all_layers(base, layers)
-                        
-                        if result:
-                            print(f"--- 'add_text' successful. Returning new image. ---")
-                        else:
-                            print(f"---! 'add_text' failed. Render result was None. ---")
-                        
                         return layers, next_id + 1, hist, format_layers(layers), result, f"✅ Added Layer {next_id}"
 
                     add_btn.click(
@@ -909,7 +890,7 @@ def create_interface():
                     # Remove last
                     def remove_last(base, layers, hist):
                         if not layers:
-                            return layers, hist, format_layers(layers), gr.update(), "⚠️ No layers"
+                            return layers, hist, format_layers(layers), None, "⚠️ No layers"
                         hist = (hist + [copy.deepcopy(layers)])[-20:]
                         layers = layers[:-1]
                         result = render_all_layers(base, layers)
@@ -924,7 +905,7 @@ def create_interface():
                     # Undo
                     def undo(base, layers, hist):
                         if not hist:
-                            return layers, hist, format_layers(layers), gr.update(), "⚠️ Nothing to undo"
+                            return layers, hist, format_layers(layers), None, "⚠️ Nothing to undo"
                         layers = copy.deepcopy(hist[-1])
                         hist = hist[:-1]
                         result = render_all_layers(base, layers)
@@ -1067,7 +1048,7 @@ def create_interface():
         def handle_register(email, pwd, pwd2):
             if pwd != pwd2:
                 return (None, "**Status:** Not logged in", "", gr.update(), gr.update(), "❌ Passwords don't match")
-            
+
             success, msg = register_user(email, pwd)
             if success:
                 # Automatically log in after successful registration
@@ -1163,7 +1144,6 @@ def create_interface():
         """)
 
     return demo
-
 # ============================================
 # LAUNCH
 # ============================================
@@ -1203,6 +1183,7 @@ if __name__ == "__main__":
     demo = create_interface()
     # Changed server_port to 8000 as requested
     demo.launch(server_name="0.0.0.0", server_port=8000)
+
 
 
 
