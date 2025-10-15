@@ -578,10 +578,32 @@ class TextLayer:
 # ============================================
 # RENDERING FUNCTIONS
 # ============================================
+def parse_color(color_string: str) -> Optional[Tuple[int, int, int]]:
+    """
+    Parses a color string that can be in hex format (#RRGGBB)
+    or rgb format (rgb(r, g, b)).
+    """
+    try:
+        if color_string.startswith('#'):
+            hex_color = color_string.lstrip('#')
+            return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        elif color_string.startswith('rgb'):
+            parts = color_string.strip('rgb()').split(',')
+            return tuple(int(p.strip()) for p in parts)
+    except (ValueError, TypeError, IndexError):
+        print(f"---! Color Parse Error: Could not parse '{color_string}'. Defaulting color. ---")
+        return None # Return None on failure
 def render_text_layer(draw, layer, font):
     """Render a single text layer with effects"""
-    text_rgb = tuple(int(layer.text_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-    outline_rgb = tuple(int(layer.outline_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    
+    # Use the new, safer color parser
+    text_rgb = parse_color(layer.text_color)
+    outline_rgb = parse_color(layer.outline_color)
+    
+    # If parsing failed for any reason, default to black/white to avoid a crash
+    if text_rgb is None: text_rgb = (255, 255, 255)
+    if outline_rgb is None: outline_rgb = (0, 0, 0)
+
     alpha = int(255 * layer.opacity / 100)
     x, y = layer.x, layer.y
 
@@ -614,7 +636,6 @@ def render_text_layer(draw, layer, font):
 
     # Main text
     draw.text((x, y), layer.text, font=font, fill=text_fill)
-
 
 def render_all_layers(base_image, layers):
     """Render all text layers onto base image"""
@@ -1183,6 +1204,7 @@ if __name__ == "__main__":
     demo = create_interface()
     # Changed server_port to 8000 as requested
     demo.launch(server_name="0.0.0.0", server_port=8000)
+
 
 
 
