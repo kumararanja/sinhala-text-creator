@@ -810,7 +810,7 @@ def create_text_effect(text, font_style, font_size, text_color, outline_color, o
 # ============================================
 def create_interface():
     """Create the main Gradio interface"""
-    
+
     icon_dir = "app/icons"
     icon_files = []
     if os.path.exists(icon_dir):
@@ -867,6 +867,7 @@ def create_interface():
 
                 # TAB 2: Add Text
                 with gr.Tab("2️⃣ Add Text"):
+                    gr.Markdown("### Add Text Layers (FREE!)")
                     base_image_with_graphics_state = gr.State(None) 
                     layers_state = gr.State([])
                     next_layer_id = gr.State(1)
@@ -899,7 +900,7 @@ def create_interface():
                                 remove_last_btn = gr.Button("🔙 Remove Last")
                                 undo_btn = gr.Button("↩️ Undo")
 
-                # TAB 3: Social Media (YOUR NEW TAB)
+                # TAB 3: Social Media
                 with gr.Tab("3️⃣ Social Media"):
                     gr.Markdown("### Create Social Media Posts")
                     with gr.Row():
@@ -928,7 +929,7 @@ def create_interface():
                             dl3_btn = gr.Button("⬇️ Download", size="lg")
                             dl3_file = gr.File(label="Download File")
                             dl3_status = gr.Textbox(label="Status")
-                
+
                 # TAB 4: Pro Tools
                 with gr.Tab("✨ Pro Tools"):
                     gr.Markdown("### Add Icons & Logos (Pro Feature)")
@@ -936,7 +937,7 @@ def create_interface():
                     with gr.Row():
                         with gr.Column():
                             gr.Markdown("#### Icon Library")
-                            icon_gallery = gr.Gallery(value=icon_files, label="Select an Icon", columns=8, height=300)
+                            icon_gallery = gr.Gallery(value=icon_files, label="Select an Icon", columns=8, height=300, preview=True)
                             gr.Markdown("#### Or Upload Your Logo")
                             logo_upload = gr.Image(label="Upload Logo", type="pil")
                         with gr.Column():
@@ -944,20 +945,41 @@ def create_interface():
                             graphic_size = gr.Slider(50, 500, 150, label="Size")
                             graphic_opacity = gr.Slider(0, 100, 100, label="Opacity")
                             add_graphic_btn = gr.Button("➕ Add Icon/Logo to Image", variant="primary")
-                
+
                 # TAB 5: Upgrade
                 with gr.Tab("💎 Upgrade"):
-                    gr.Markdown("...") # Your upgrade text here
+                    gr.Markdown("""
+                    ## 💰 Pricing Plans
+                    ... [Your pricing text here] ...
+                    """)
 
                 # TAB 6: Admin
                 with gr.Tab("🔐 Admin"):
-                    gr.Markdown("...") # Your admin panel code here
+                    gr.Markdown("## 🔐 Admin Dashboard")
+                    gr.Markdown("*For administrators only*")
+                    with gr.Row():
+                        admin_password = gr.Textbox(label="Admin Password", type="password", placeholder="Enter admin password to access")
+                        admin_login_btn = gr.Button("🔓 Access Admin Dashboard", variant="primary", size="lg")
+                    admin_message = gr.Markdown("")
+                    with gr.Group(visible=False) as admin_panel:
+                        # ... [Admin panel UI code here] ...
+                        pass # Placeholder for brevity
 
             # --- EVENT HANDLERS FOR ALL TABS ---
-            
-            def load_image_to_tabs(image):
-                return image, image, [], 1, "No layers yet", "✅ Image loaded into Text & Pro tabs."
 
+            # Helper function to load image into both Pro and Text tabs
+            def load_image_to_tabs(image):
+                return image, image, [], 1, "No layers yet", "✅ Image loaded. You can add graphics in 'Pro Tools' or text in 'Add Text'."
+
+            # Function definition for the Generate button (THIS WAS MISSING)
+            def gen_and_update_stats(prompt, size, user_info):
+                img, msg = generate_image_with_auth(prompt, size, user_info)
+                if user_info:
+                    stats = get_user_stats(user_info['id'])
+                    return img, msg, stats
+                return img, msg, ""
+
+            # Tying the "Get Image" tab to the other tabs
             upload_btn.click(process_uploaded_image, [upload_img], [img_display, img_status]).then(
                 load_image_to_tabs, [img_display], [base_image_with_graphics_state, preview, layers_state, next_layer_id, layers_list, status]
             )
@@ -977,7 +999,7 @@ def create_interface():
             ).then(
                 lambda img: img, [preview], [base_image_with_graphics_state]
             )
-            
+
             # --- ADD TEXT LOGIC ---
             def apply_preset(preset_name):
                 if preset_name in PRESETS:
@@ -985,23 +1007,36 @@ def create_interface():
                     return settings["text_color"], settings["outline_color"], settings["outline_width"], settings["shadow_blur"], settings["add_shadow"], settings["add_glow"]
                 return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
             preset.change(apply_preset, preset, [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow])
-            
+
+            preview.select(lambda evt: (evt.index[0], evt.index[1]), None, [x_coord, y_coord])
+
+            def add_text(base_with_graphics, layers, next_id, hist, txt, fnt, sz, tcol, ocol, ow, shad, blur, glow, opac, x, y):
+                if not base_with_graphics:
+                    return layers, next_id, hist, format_layers(layers), None, "❌ Load image first"
+                if not txt.strip():
+                    return layers, next_id, hist, format_layers(layers), None, "❌ Enter text"
+                hist = (hist + [copy.deepcopy(layers)])[-20:]
+                new_layer = TextLayer(next_id, txt, fnt, int(sz), tcol, int(x), int(y), int(ow), ocol, shad, int(blur), glow, int(opac), True)
+                layers = layers + [new_layer]
+                result = render_all_layers(base_with_graphics, layers)
+                return layers, next_id + 1, hist, format_layers(layers), result, f"✅ Added Layer {next_id}"
             add_btn.click(
                 add_text,
                 [base_image_with_graphics_state, layers_state, next_layer_id, history, text_input, font, font_size, text_color, outline_color, outline_w, add_shadow, shadow_blur, add_glow, opacity, x_coord, y_coord],
                 [layers_state, next_layer_id, history, layers_list, preview, status]
             )
-            
-            # ... [Other Add Text button handlers remain the same] ...
-            
+            # ... [Remove Last and Undo handlers here] ...
+
             # --- SOCIAL MEDIA TAB LOGIC ---
             eff_btn.click(create_text_effect, 
                           [eff_txt, eff_font, eff_size, eff_txt_col, eff_out_col, eff_out_w, eff_shad, eff_blur, eff_bg_col, eff_bg_type, eff_size_p, eff_center, eff_glow], 
                           [eff_prev, eff_status])
             dl3_btn.click(lambda img, fmt: save_image(img, f"{fmt} Format"), [eff_prev, dl3_fmt], [dl3_file, dl3_status])
-            
-            # ... [All other event handlers for login, register, admin, etc. remain the same] ...
-        return demo
+
+            # --- AUTHENTICATION HANDLERS ---
+            # ... [Login, Register, Logout handlers here] ...
+
+    return demo
 # ============================================
 # LAUNCH
 # ============================================
@@ -1041,6 +1076,7 @@ if __name__ == "__main__":
     demo = create_interface()
     # Changed server_port to 8000 as requested
     demo.launch(server_name="0.0.0.0", server_port=8000)
+
 
 
 
