@@ -808,6 +808,34 @@ def create_text_effect(text, font_style, font_size, text_color, outline_color, o
 # ============================================
 # GRADIO INTERFACE
 # ============================================
+def add_graphic_layer(base_image, graphic, x, y, size, opacity):
+    """
+    Pastes a graphic (icon or logo) onto the base image.
+    Returns the new composite image.
+    """
+    if not base_image or not graphic:
+        return base_image, "❌ Select an image and a graphic first."
+
+    # Resize the graphic
+    width = int(size)
+    aspect_ratio = graphic.height / graphic.width
+    height = int(width * aspect_ratio)
+    resized_graphic = graphic.resize((width, height), Image.Resampling.LANCZOS)
+
+    # Handle opacity
+    if opacity < 100:
+        alpha = resized_graphic.split()[3]
+        alpha = alpha.point(lambda p: p * (opacity / 100))
+        resized_graphic.putalpha(alpha)
+
+    # Create a new transparent layer for the graphic
+    graphic_layer = Image.new("RGBA", base_image.size, (0, 0, 0, 0))
+    graphic_layer.paste(resized_graphic, (int(x), int(y)), resized_graphic)
+
+    # Composite the graphic layer onto the base image
+    composite = Image.alpha_composite(base_image.convert("RGBA"), graphic_layer)
+
+    return composite.convert("RGB"), "✅ Graphic added! You can now add text on top."
 def create_interface():
     """Create the main Gradio interface"""
 
@@ -1076,6 +1104,7 @@ if __name__ == "__main__":
     demo = create_interface()
     # Changed server_port to 8000 as requested
     demo.launch(server_name="0.0.0.0", server_port=8000)
+
 
 
 
