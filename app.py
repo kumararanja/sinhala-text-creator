@@ -368,7 +368,7 @@ if not fonts_available:
     ]
     fallback_found = False
     for fp in fallback_paths:
-        if os.path.exists(fp):
+        if os.path="exists(fp):
             try:
                 # Test load the fallback font
                 ImageFont.truetype(fp, 20)
@@ -384,4 +384,3 @@ if not fonts_available:
          # Consider exiting or handling this more gracefully if fonts are essential
 
 print("--- Font loading complete ---")
-
