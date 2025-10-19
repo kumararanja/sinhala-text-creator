@@ -352,6 +352,7 @@ for name, filename in FONT_PATHS.items():
             print(f"❌ Error loading font '{name}' from '{path}': {e}")
     else:
         print(f"⚠️ Not Found: Font file for '{name}' at '{path}'")
+        
 if not fonts_available:
     # Fallback to a system font if no custom fonts are loaded
     print("❌ No custom fonts loaded. Falling back to a system font.")
