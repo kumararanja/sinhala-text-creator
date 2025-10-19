@@ -353,13 +353,29 @@ for name, filename in FONT_PATHS.items():
     else:
         print(f"⚠️ Not Found: Font file for '{name}' at '{path}'")
 if not fonts_available:
-    print("❌ No custom fonts loaded. Falling back to system font.")
+    # Fallback to a system font if no custom fonts are loaded
+    print("❌ No custom fonts loaded. Falling back to a system font.")
     # Attempt to find a common system font path
     fallback_paths = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", # Linux
         "/System/Library/Fonts/HelveticaNeue.ttc", # MacOS (using a common one)
         "C:/Windows/Fonts/arialbd.ttf" # Windows (bold arial)
     ]
+    fallback_found = False
     for fp in fallback_paths:
         if os.path.exists(fp):
-            fonts_available["
+            try:
+                # Test load the fallback font
+                ImageFont.truetype(fp, 20) 
+                fonts_available["Fallback"] = fp
+                print(f"✅ Using fallback font: {fp}")
+                fallback_found = True
+                break # Stop looking once found
+            except Exception as e:
+                print(f"⚠️ Found fallback path '{fp}' but failed to load: {e}")
+
+    if not fallback_found:
+         print("⚠️ CRITICAL: Could not find or load any suitable system fallback font.")
+         # Consider exiting or handling this more gracefully if fonts are essential
+
+print("--- Font loading complete ---")
