@@ -475,29 +475,26 @@ def export_user_data() -> tuple:
 # ============================================
 # FONTS & CONFIG
 # ============================================
-FONT_DIR = "/home/debian/fonts/"
-
 FONT_PATHS = {
-    # --- Sinhala Fonts ---
-    "Abhaya Regular (Sinhala)": "AbhayaLibre-Regular.ttf",
-    "Abhaya Bold (Sinhala)": "AbhayaLibre-Bold.ttf",
-    "Abhaya Medium (Sinhala)": "AbhayaLibre-Medium.ttf",
-    "Noto Sans (Sinhala)": "NotoSansSinhala_Condensed-Regular.ttf",
-
     # --- English / General Fonts ---
-    "Montserrat Bold": "Montserrat-Bold.ttf",
-    "Montserrat Regular": "Montserrat-Regular.ttf",
-    "Montserrat Italic": "Montserrat-Italic.ttf", # Added Italic
-    "Anton": "Anton-Regular.ttf", # Corrected name from Anton Bold
+    "Anton": "Anton-Regular.ttf",
     "Bebas Neue": "BebasNeue-Regular.ttf",
     "Oswald Bold": "Oswald-Bold.ttf",
     "Oswald Regular": "Oswald-Regular.ttf",
+    "Montserrat Bold": "Montserrat-Bold.ttf",
+    "Montserrat Regular": "Montserrat-Regular.ttf",
+    "Montserrat Italic": "Montserrat-Italic.ttf",
 
     # --- Tamil Fonts ---
     "Hind Madurai Bold (Tamil)": "HindMadurai-Bold.ttf",
     "Hind Madurai Regular (Tamil)": "HindMadurai-Regular.ttf",
-    "Catamaran (Tamil)": "Catamaran-Tamil.ttf" # Added Catamaran
+
+    # --- Sinhala Fonts ---
+    "Abhaya Bold (Sinhala)": "AbhayaLibre-Bold.ttf",
+    "Abhaya Regular (Sinhala)": "AbhayaLibre-Regular.ttf",
+    "Noto Sans (Sinhala)": "NotoSansSinhala_Condensed-Regular.ttf"
 }
+
 
 fonts_available = {}
 for name, path in FONT_PATHS.items():
@@ -1360,6 +1357,7 @@ if __name__ == "__main__":
     
     demo = create_interface()
     demo.launch(server_name="0.0.0.0", server_port=8000)
+
 
 
 
