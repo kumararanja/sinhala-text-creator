@@ -476,25 +476,26 @@ def export_user_data() -> tuple:
 # FONTS & CONFIG
 # ============================================
 FONT_PATHS = {
+    # --- Sinhala Fonts ---
+    "Abhaya Regular (Sinhala)": "fonts/AbhayaLibre-Regular.ttf",
+    "Abhaya Bold (Sinhala)": "fonts/AbhayaLibre-Bold.ttf",
+    "Abhaya Medium (Sinhala)": "fonts/AbhayaLibre-Medium.ttf",
+    "Noto Sans (Sinhala)": "fonts/NotoSansSinhala_Condensed-Regular.ttf",
+
     # --- English / General Fonts ---
-    "Anton": "Anton-Regular.ttf",
-    "Bebas Neue": "BebasNeue-Regular.ttf",
-    "Oswald Bold": "Oswald-Bold.ttf",
-    "Oswald Regular": "Oswald-Regular.ttf",
-    "Montserrat Bold": "Montserrat-Bold.ttf",
-    "Montserrat Regular": "Montserrat-Regular.ttf",
-    "Montserrat Italic": "Montserrat-Italic.ttf",
+    "Montserrat Bold": "fonts/Montserrat-Bold.ttf",
+    "Montserrat Regular": "fonts/Montserrat-Regular.ttf",
+    "Montserrat Italic": "fonts/Montserrat-Italic.ttf",
+    "Anton": "fonts/Anton-Regular.ttf",
+    "Bebas Neue": "fonts/BebasNeue-Regular.ttf",
+    "Oswald Bold": "fonts/Oswald-Bold.ttf",
+    "Oswald Regular": "fonts/Oswald-Regular.ttf",
 
     # --- Tamil Fonts ---
-    "Hind Madurai Bold (Tamil)": "HindMadurai-Bold.ttf",
-    "Hind Madurai Regular (Tamil)": "HindMadurai-Regular.ttf",
-
-    # --- Sinhala Fonts ---
-    "Abhaya Bold (Sinhala)": "AbhayaLibre-Bold.ttf",
-    "Abhaya Regular (Sinhala)": "AbhayaLibre-Regular.ttf",
-    "Noto Sans (Sinhala)": "NotoSansSinhala_Condensed-Regular.ttf"
+    "Hind Madurai Bold (Tamil)": "fonts/HindMadurai-Bold.ttf",
+    "Hind Madurai Regular (Tamil)": "fonts/HindMadurai-Regular.ttf",
+    "Catamaran (Tamil)": "fonts/Catamaran-Tamil.ttf"
 }
-
 
 fonts_available = {}
 for name, path in FONT_PATHS.items():
@@ -1357,6 +1358,7 @@ if __name__ == "__main__":
     
     demo = create_interface()
     demo.launch(server_name="0.0.0.0", server_port=8000)
+
 
 
 
