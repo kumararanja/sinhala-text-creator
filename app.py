@@ -1107,6 +1107,25 @@ def create_interface():
                         [base_image_state],
                         [layers_state, next_layer_id, history, layers_list, preview, status]
                     )
+
+                    # --- NEW DOWNLOAD SECTION ---
+                        gr.Markdown("---") # Add a separator
+                        gr.Markdown("### 💾 Download Your Image")
+                        with gr.Row():
+                            format_choice = gr.Dropdown(["JPEG (Smaller File)", "PNG (Higher Quality)"], value="JPEG (Smaller File)", label="Choose Format")
+                            prepare_download_btn = gr.Button("🚀 Prepare Download", variant="primary")
+                        with gr.Row():
+                            download_file = gr.File(label="Download Link", interactive=False)
+                            download_status = gr.Textbox(label="Status", interactive=False)
+
+                        # Download button handler
+                        prepare_download_btn.click(
+                            fn=save_image,
+                            inputs=[preview, format_choice], # Use the final image from 'preview'
+                            outputs=[download_file, download_status]
+                        )
+                        # --- END NEW DOWNLOAD SECTION ---
+                    
                 
                 # TAB 3
                 with gr.Tab("💎 Upgrade"):
@@ -1358,6 +1377,7 @@ if __name__ == "__main__":
     
     demo = create_interface()
     demo.launch(server_name="0.0.0.0", server_port=8000)
+
 
 
 
