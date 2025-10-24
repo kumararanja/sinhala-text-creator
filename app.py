@@ -481,13 +481,20 @@ FONT_PATHS = {
     "Abhaya Regular": "fonts/AbhayaLibre-Regular.ttf",
     "Abhaya Bold": "fonts/AbhayaLibre-Bold.ttf",
     "Abhaya Medium": "fonts/AbhayaLibre-Medium.ttf",
+    "Noto Sans (Sinhala)": "NotoSansSinhala_Condensed-Regular.ttf",
     
     # English fonts
     "Montserrat Bold": "fonts/Montserrat-Bold.ttf",
     "Montserrat Regular": "fonts/Montserrat-Regular.ttf",
     "Anton Bold": "fonts/Anton-Regular.ttf",
     "Bebas Neue": "fonts/BebasNeue-Regular.ttf",
-    
+    "Oswald Bold": "Oswald-Bold.ttf",
+    "Oswald Regular": "Oswald-Regular.ttf",
+
+    # --- Tamil Fonts ---
+    "Hind Madurai Bold (Tamil)": "HindMadurai-Bold.ttf",
+    "Hind Madurai Regular (Tamil)": "HindMadurai-Regular.ttf",
+   
     # Tamil fonts
     "Catamaran Tamil": "fonts/Catamaran-Tamil.ttf",
 }
@@ -1353,4 +1360,5 @@ if __name__ == "__main__":
     
     demo = create_interface()
     demo.launch(server_name="0.0.0.0", server_port=8000)
+
 
