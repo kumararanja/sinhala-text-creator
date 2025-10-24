@@ -477,23 +477,25 @@ def export_user_data() -> tuple:
 # ============================================
 
 FONT_PATHS = {
-    # Sinhala fonts
-    "Abhaya Regular": "fonts/AbhayaLibre-Regular.ttf",
-    "Abhaya Bold": "fonts/AbhayaLibre-Bold.ttf",
-    "Abhaya Medium": "fonts/AbhayaLibre-Medium.ttf",
+    # --- Sinhala Fonts ---
+    "Abhaya Regular (Sinhala)": "AbhayaLibre-Regular.ttf",
+    "Abhaya Bold (Sinhala)": "AbhayaLibre-Bold.ttf",
+    "Abhaya Medium (Sinhala)": "AbhayaLibre-Medium.ttf",
     "Noto Sans (Sinhala)": "NotoSansSinhala_Condensed-Regular.ttf",
-    
-    # English fonts
-    "Montserrat Bold": "fonts/Montserrat-Bold.ttf",
-    "Montserrat Regular": "fonts/Montserrat-Regular.ttf",
-    "Anton Bold": "fonts/Anton-Regular.ttf",
-    "Bebas Neue": "fonts/BebasNeue-Regular.ttf",
+
+    # --- English / General Fonts ---
+    "Montserrat Bold": "Montserrat-Bold.ttf",
+    "Montserrat Regular": "Montserrat-Regular.ttf",
+    "Montserrat Italic": "Montserrat-Italic.ttf", # Added Italic
+    "Anton": "Anton-Regular.ttf", # Corrected name from Anton Bold
+    "Bebas Neue": "BebasNeue-Regular.ttf",
     "Oswald Bold": "Oswald-Bold.ttf",
     "Oswald Regular": "Oswald-Regular.ttf",
 
     # --- Tamil Fonts ---
     "Hind Madurai Bold (Tamil)": "HindMadurai-Bold.ttf",
     "Hind Madurai Regular (Tamil)": "HindMadurai-Regular.ttf",
+    "Catamaran (Tamil)": "Catamaran-Tamil.ttf" # Added Catamaran
 }
 
 fonts_available = {}
@@ -1357,6 +1359,7 @@ if __name__ == "__main__":
     
     demo = create_interface()
     demo.launch(server_name="0.0.0.0", server_port=8000)
+
 
 
 
