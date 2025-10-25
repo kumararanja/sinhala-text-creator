@@ -1622,6 +1622,7 @@ def create_interface():
                     stats,
                     gr.update(visible=False), # auth_section
                     gr.update(visible=True)  # main_app
+                    msg
                 )
             return None, "**Status:** Not logged in", "", gr.update(), gr.update()
 
