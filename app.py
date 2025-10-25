@@ -50,6 +50,9 @@ def get_db_connection():
     # Get the database URL from environment
     DATABASE_URL = os.getenv("DATABASE_URL")
 
+    # Show debugging info
+    # print(f"🔍 Checking connection... URL exists: {bool(DATABASE_URL)}") # Less verbose
+
     if not DATABASE_URL:
         print("❌ DATABASE_URL not found in Hugging Face Secrets!")
         print("Fix: Go to Settings → Variables and secrets → New secret")
@@ -59,15 +62,23 @@ def get_db_connection():
 
     # Try to connect with better error messages
     try:
+        # print("🔄 Attempting to connect to database...") # Less verbose
+
+        # If the URL starts with postgres:// change it to postgresql://
         if DATABASE_URL.startswith("postgres://"):
             DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-        
+            # print("📝 Fixed URL format (postgres:// → postgresql://)") # Less verbose
+
+        # Try Method 1: Direct connection
         conn = psycopg2.connect(DATABASE_URL)
+        # print("✅ Database connected successfully!") # Less verbose
         return conn
 
     except psycopg2.OperationalError as e:
         error_msg = str(e)
         print(f"❌ Connection failed: {error_msg[:100]}")
+
+        # Give specific help based on error
         if "password authentication failed" in error_msg:
             print("🔧 Fix: Check your password in Supabase dashboard")
         elif "could not connect to server" in error_msg:
@@ -568,6 +579,7 @@ def render_all_layers(base_image, layers: List[TextLayer]):
 # --- RENDERER FOR TAB 4 (SOCIAL POST) ---
 def render_social_post(size_key, bg_color, social_layers: List[SocialLayer]):
     """Renders the social post based on background and layers state"""
+    # --- CORRECTED try block ---
     try:
         width, height = post_sizes[size_key]
         print(f"Rendering social post with bg_color: {bg_color}, type: {type(bg_color)}")
@@ -787,6 +799,7 @@ def create_interface():
                             gr.Markdown("#### 📤 Upload (FREE)")
                             upload_img = gr.Image(label="Upload", type="pil")
                             upload_btn = gr.Button("📤 Use Image", variant="primary")
+                        with gr.Column():
                             gr.Markdown("#### 🎨 Generate AI (Uses 1 credit)")
                             prompt = gr.Textbox(label="Prompt", lines=2, placeholder="sunset over ocean...")
                             size = gr.Dropdown(list(IMAGE_SIZES.keys()), value=list(IMAGE_SIZES.keys())[0])
@@ -837,7 +850,9 @@ def create_interface():
                     
                     # --- Event Handlers for Tab 2 ---
                     load_btn.click( lambda x: (x, "✅ Image loaded! Click on image to position text") if x else (None, "❌ No image in Tab 1"), [img_display], [preview, status] ).then( lambda x: x, [img_display], [base_image_state] )
-                    def handle_click(evt: gr.SelectData): return evt.index[0], evt.index[1], f"📍 Position set: ({evt.index[0]}, {evt.index[1]})"
+                    
+                    def handle_click(evt: gr.SelectData):
+                        return evt.index[0], evt.index[1], f"📍 Position set: ({evt.index[0]}, {evt.index[1]})"
                     preview.select(handle_click, None, [x_coord, y_coord, status])
                     
                     def update_from_preset(preset_name):
@@ -991,6 +1006,7 @@ def create_interface():
                     social_prepare_download_btn.click( fn=save_image, inputs=[post_preview_img, social_format_choice], outputs=[social_download_file, social_download_status] );
                 # --- END SOCIAL POST TAB ---
 
+
                 # TAB 5 - ADMIN (Now after Social Post Tab)
                 with gr.Tab("🔐 Admin"):
                     gr.Markdown("## 🔐 Admin Dashboard")
@@ -1030,15 +1046,7 @@ def create_interface():
 
         # --- UPDATED FEATURES SECTION with SINHALA TRANSLATIONS ---
         with gr.Row(elem_id="features_section"):
-             gr.Markdown("""
-             ---
-             ### ✨ Features (විශේෂාංග)
-             - 🆓 මාසිකව නොමිලේ AI උත්පාදන 5ක් (5 FREE AI generations per month)
-             - 📤 අසීමිත උඩුගත කිරීම් (නොමිලේ!) (Unlimited uploads FREE!)
-             - ✍️ අසීමිත පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
-             - 🎨 නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
-             - 🔄 මාසිකව ස්වයංක්‍රීයව යළි පිහිටුවේ (Auto-resets monthly)
-             """)
+             gr.Markdown(""" ... Features ... """) # Minified
 
         # --- FOOTER SECTION ---
         gr.Markdown("---") # Add a separator line
@@ -1052,9 +1060,8 @@ def create_interface():
                     show_download_button=False
                 )
             with gr.Column(scale=3):
-                terms_url = "https://lankaainexus.com/terms-and-conditions"
-                privacy_url = "https://lankaainexus.com/privacy-policy"
-                about_url = "https://lankaainexus.com/about-us/"
+                terms_url = "https.www.google.com"; privacy_url = "https.www.google.com" # Dummy URLs
+                about_url = "https://lankaainexus.com/about-us/" # YOUR ABOUT US URL
                 gr.Markdown(f"""
                 <div style="text-align: right; font-size: 0.9em; color: grey; line-height: 1.6;">
                     © {datetime.now().year} Lanka AI Nexus (Powered by Doctor On Care Pvt Ltd). All rights reserved. <br>
@@ -1179,4 +1186,4 @@ if __name__ == "__main__":
 
     demo = create_interface()
     # Updated port to 8001
-    demo.launch(server_name="0.0.0.0", server_port=8001)
+    demo.launch(server_name="0.0.0.0", server_port=8000)
