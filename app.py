@@ -1,3 +1,4 @@
+
 """
 Sinhala Text Creator - COMPLETE VERSION WITH ADMIN DASHBOARD AND ADVANCED EFFECTS
 ==================================================================================
@@ -1603,12 +1604,12 @@ def create_interface():
             if pwd != pwd2:
                 return None, "❌ Passwords don't match", gr.update(), gr.update()
             success, msg = register_user(email, pwd)
-            return None, msg, gr.update(), gr.update()
+            return None, msg, gr.update(), gr.update() # Matches original output expectations
 
         reg_btn.click(
             handle_register,
             [reg_email, reg_password, reg_password2],
-            [user_state, reg_msg, auth_section, main_app]
+            [user_state, reg_msg, auth_section, main_app] # Assumes reg_btn has same outputs as login_btn initially
         )
 
         # Login (Simplified for testing - Social Post tab always visible)
@@ -1616,36 +1617,43 @@ def create_interface():
             success, msg, user_info = login_user(email, pwd)
             if success:
                 stats = get_user_stats(user_info['id'])
+                # --- CORRECTED RETURN (Added comma) ---
                 return (
                     user_info,
                     f"**Status:** ✅ {email}",
                     stats,
                     gr.update(visible=False), # auth_section
-                    gr.update(visible=True)  # main_app
-                    msg
+                    gr.update(visible=True),  # main_app
+                    msg                      # login_msg
                 )
-            return None, "**Status:** Not logged in", "", gr.update(), gr.update()
+            # --- Make sure this failure return is also correct (6 items) ---
+            # Assuming auth_section should be visible on failure
+            return None, "**Status:** Not logged in", "", gr.update(visible=True), gr.update(visible=False), msg # Corrected auth/main app visibility
 
         login_btn.click(
             handle_login,
             [login_email, login_password],
-            [user_state, login_status, stats_display, auth_section, main_app, login_msg] # Removed UI visibility outputs
+            # --- CORRECTED OUTPUTS LIST (6 items) ---
+            [user_state, login_status, stats_display, auth_section, main_app, login_msg]
         )
 
         # Logout (Simplified for testing)
         def handle_logout():
+             # --- CORRECTED RETURN (6 items to match login_btn outputs) ---
             return (
                 None,
                 "**Status:** Logged out",
                 "",
                 gr.update(visible=True),  # auth_section
-                gr.update(visible=False) # main_app
+                gr.update(visible=False), # main_app
+                "👋 Logged out"            # login_msg placeholder
             )
 
         logout_btn.click(
             handle_logout,
             None,
-            [user_state, login_status, stats_display, auth_section, main_app, login_msg] # Removed UI visibility outputs
+             # --- CORRECTED OUTPUTS LIST (6 items) ---
+            [user_state, login_status, stats_display, auth_section, main_app, login_msg]
         )
 
         # Upload
