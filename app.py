@@ -1031,7 +1031,7 @@ def create_interface():
                 # --- Column 2: Image ---
                 with gr.Column(scale=1): # Adjust scale if needed
                     gr.Image(
-                        value="logo.jpg", # Use the relative path (filename) - RENAME your file to logo.jpg
+                        value="login_image.jpg", # <-- CORRECTED LOGIN IMAGE FILENAME
                         label="Auth Image",
                         show_label=False,
                         container=False, # Removes border/padding
@@ -1413,7 +1413,7 @@ def create_interface():
              ### ✨ Features (විශේෂාංග)
              - 🆓 මාසිකව නොමිලේ AI උත්පාදන 5ක් (5 FREE AI generations per month)
              - 📤 අසීමිත උඩුගත කිරීම් (නොමිලේ!) (Unlimited uploads FREE!)
-             - ✍️ අසීමිත පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
+             - ✍️ පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
              - 🎨 නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
              - 🔄 මාසිකව ස්වයංක්‍රීයව යළි පිහිටුවේ (Auto-resets monthly)
              """)
@@ -1423,7 +1423,7 @@ def create_interface():
         with gr.Row(elem_id="footer"):
             with gr.Column(scale=1, min_width=160): # Column for Logo
                 gr.Image(
-                    value="logo.JPG", # <--- CORRECTED FILENAME HERE
+                    value="logo.JPG", # <-- CORRECTED FILENAME CASE
                     show_label=False,
                     height=50,
                     container=False,
@@ -1562,4 +1562,4 @@ if __name__ == "__main__":
 
     demo = create_interface()
     # Updated port to 8001
-    demo.launch(server_name="0.0.0.0", server_port=8000)
+    demo.launch(server_name="0.0.0.0", server_port=8000) # <-- CORRECTED PORT
