@@ -50,9 +50,6 @@ def get_db_connection():
     # Get the database URL from environment
     DATABASE_URL = os.getenv("DATABASE_URL")
 
-    # Show debugging info
-    # print(f"🔍 Checking connection... URL exists: {bool(DATABASE_URL)}") # Less verbose
-
     if not DATABASE_URL:
         print("❌ DATABASE_URL not found in Hugging Face Secrets!")
         print("Fix: Go to Settings → Variables and secrets → New secret")
@@ -62,23 +59,15 @@ def get_db_connection():
 
     # Try to connect with better error messages
     try:
-        # print("🔄 Attempting to connect to database...") # Less verbose
-
-        # If the URL starts with postgres:// change it to postgresql://
         if DATABASE_URL.startswith("postgres://"):
             DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-            # print("📝 Fixed URL format (postgres:// → postgresql://)") # Less verbose
-
-        # Try Method 1: Direct connection
+        
         conn = psycopg2.connect(DATABASE_URL)
-        # print("✅ Database connected successfully!") # Less verbose
         return conn
 
     except psycopg2.OperationalError as e:
         error_msg = str(e)
         print(f"❌ Connection failed: {error_msg[:100]}")
-
-        # Give specific help based on error
         if "password authentication failed" in error_msg:
             print("🔧 Fix: Check your password in Supabase dashboard")
         elif "could not connect to server" in error_msg:
@@ -129,37 +118,26 @@ def register_user(email: str, password: str) -> Tuple[bool, str]:
     """Register new user"""
     if not email or not password:
         return False, "❌ Email and password required"
-
     if len(password) < 6:
         return False, "❌ Password must be at least 6 characters"
-
     try:
         conn = get_db_connection()
         if not conn:
             return False, "❌ Database not available"
-
         cursor = conn.cursor()
-
-        # Check if user exists
         cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
         if cursor.fetchone():
             conn.close()
             return False, "❌ Email already registered"
-
-        # Create user
         password_hash = hash_password(password)
         current_month = datetime.now().strftime('%Y-%m')
-
         cursor.execute('''
             INSERT INTO users (email, password_hash, last_reset_date)
             VALUES (%s, %s, %s)
         ''', (email, password_hash, current_month))
-
         conn.commit()
         conn.close()
-
         return True, "✅ Account created! Please login."
-
     except Exception as e:
         return False, f"❌ Error: {str(e)}"
 
@@ -167,33 +145,25 @@ def login_user(email: str, password: str) -> Tuple[bool, str, Optional[dict]]:
     """Login user and return user info"""
     if not email or not password:
         return False, "❌ Email and password required", None
-
     try:
         conn = get_db_connection()
         if not conn:
             return False, "❌ Database not available", None
-
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         password_hash = hash_password(password)
-
         cursor.execute('''
             SELECT id, email, plan, monthly_generations, last_reset_date, total_generations
             FROM users
             WHERE email = %s AND password_hash = %s AND is_active = true
         ''', (email, password_hash))
-
         user = cursor.fetchone()
         conn.close()
-
         if not user:
             return False, "❌ Invalid email or password", None
-
-        # Reset monthly if new month
         current_month = datetime.now().strftime('%Y-%m')
         if user['last_reset_date'] != current_month:
             reset_monthly_usage(user['id'])
             user['monthly_generations'] = 0
-
         user_info = {
             'id': user['id'],
             'email': user['email'],
@@ -202,20 +172,13 @@ def login_user(email: str, password: str) -> Tuple[bool, str, Optional[dict]]:
             'total_generations': user['total_generations'],
             'remaining': get_remaining_generations(user['plan'], user['monthly_generations'])
         }
-
         return True, f"✅ Welcome back, {email}!", user_info
-
     except Exception as e:
         return False, f"❌ Error: {str(e)}", None
 
 def get_remaining_generations(plan: str, used: int) -> int:
     """Calculate remaining generations for plan"""
-    limits = {
-        'free': 5,
-        'starter': 25,
-        'popular': 60,
-        'premium': 200
-    }
+    limits = {'free': 5, 'starter': 25, 'popular': 60, 'premium': 200}
     limit = limits.get(plan, 5)
     return max(0, limit - used)
 
@@ -225,16 +188,13 @@ def reset_monthly_usage(user_id: int):
         conn = get_db_connection()
         if not conn:
             return
-
         cursor = conn.cursor()
         current_month = datetime.now().strftime('%Y-%m')
-
         cursor.execute('''
             UPDATE users
             SET monthly_generations = 0, last_reset_date = %s
             WHERE id = %s
         ''', (current_month, user_id))
-
         conn.commit()
         conn.close()
     except Exception as e:
@@ -246,47 +206,34 @@ def increment_usage(user_id: int) -> Tuple[bool, str]:
         conn = get_db_connection()
         if not conn:
             return False, "❌ Database not available"
-
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Get current usage
         cursor.execute('''
             SELECT monthly_generations, plan FROM users WHERE id = %s
         ''', (user_id,))
-
         result = cursor.fetchone()
         if not result:
             conn.close()
             return False, "❌ User not found"
-
         monthly_gens = result['monthly_generations']
         plan = result['plan']
         remaining = get_remaining_generations(plan, monthly_gens)
-
         if remaining <= 0:
             conn.close()
             return False, "❌ Monthly limit reached! Upgrade your plan or wait for next month."
-
-        # Increment counters
         cursor.execute('''
             UPDATE users
             SET monthly_generations = monthly_generations + 1,
                 total_generations = total_generations + 1
             WHERE id = %s
         ''', (user_id,))
-
-        # Log usage
         cursor.execute('''
             INSERT INTO usage_logs (user_id, action_type)
             VALUES (%s, %s)
         ''', (user_id, 'ai_generation'))
-
         conn.commit()
         conn.close()
-
         new_remaining = remaining - 1
         return True, f"✅ Generated! {new_remaining} remaining this month"
-
     except Exception as e:
         return False, f"❌ Error: {str(e)}"
 
@@ -296,21 +243,16 @@ def get_user_stats(user_id: int) -> str:
         conn = get_db_connection()
         if not conn:
             return "❌ Database not available"
-
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-
         cursor.execute('''
             SELECT email, plan, monthly_generations, total_generations, created_at
             FROM users WHERE id = %s
         ''', (user_id,))
-
         user = cursor.fetchone()
         conn.close()
-
         if user:
             remaining = get_remaining_generations(user['plan'], user['monthly_generations'])
             created_date = user['created_at'].strftime('%Y-%m-%d') if user['created_at'] else 'N/A'
-
             return f"""
 ### 👤 {user['email']}
 - **Plan:** {user['plan'].upper()}
@@ -319,7 +261,6 @@ def get_user_stats(user_id: int) -> str:
 - **Member Since:** {created_date}
             """
         return "❌ User not found"
-
     except Exception as e:
         return f"❌ Error: {str(e)}"
 
@@ -479,7 +420,6 @@ class SocialLayer: # For Tab 4
 # ============================================
 # ADVANCED RENDERING FUNCTIONS (for Tab 2 & 4)
 # ============================================
-
 def apply_neon_effect(draw, text, font, x, y, base_color, glow_color, intensity=3):
     """Create neon glow effect"""
     base_rgb = tuple(int(base_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
@@ -690,55 +630,85 @@ def render_social_post(size_key, bg_color, social_layers: List[SocialLayer]):
 # IMAGE GENERATION FUNCTIONS
 # ============================================
 def generate_image_with_auth(prompt, size_option, user_info, progress=gr.Progress()):
-    if not user_info: return None, "❌ Please login first";
-    can_generate, msg = increment_usage(user_info['id']);
-    if not can_generate: return None, msg;
-    if not REPLICATE_AVAILABLE or not REPLICATE_API_TOKEN: return None, "❌ AI generation not available. Check REPLICATE_API_TOKEN.";
-    progress(0, desc="Generating..."); width, height = IMAGE_SIZES[size_option];
+    if not user_info: return None, "❌ Please login first"
+    can_generate, msg = increment_usage(user_info['id'])
+    if not can_generate: return None, msg
+    if not REPLICATE_AVAILABLE or not REPLICATE_API_TOKEN: return None, "❌ AI generation not available. Check REPLICATE_API_TOKEN."
+    progress(0, desc="Generating...")
+    width, height = IMAGE_SIZES[size_option]
     try:
-        output = replicate.run("stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b", input={"prompt": prompt, "width": width, "height": height, "num_outputs": 1});
-        response = requests.get(output[0]); image = Image.open(io.BytesIO(response.content)); return image, msg;
-    except Exception as e: return None, f"❌ Generation error: {str(e)}";
+        output = replicate.run("stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b", input={"prompt": prompt, "width": width, "height": height, "num_outputs": 1})
+        response = requests.get(output[0])
+        image = Image.open(io.BytesIO(response.content))
+        return image, msg
+    except Exception as e:
+        return None, f"❌ Generation error: {str(e)}"
 
 def process_uploaded_image(image):
-    if image is None: return None, "❌ No image uploaded";
-    max_size = 2048;
-    if image.width > max_size or image.height > max_size: ratio = min(max_size / image.width, max_size / image.height); new_size = (int(image.width * ratio), int(image.height * ratio)); image = image.resize(new_size, Image.Resampling.LANCZOS);
-    return image, f"✅ Loaded: {image.width}x{image.height}px (FREE - no credits used!)";
+    if image is None: return None, "❌ No image uploaded"
+    max_size = 2048
+    if image.width > max_size or image.height > max_size:
+        ratio = min(max_size / image.width, max_size / image.height)
+        new_size = (int(image.width * ratio), int(image.height * ratio))
+        image = image.resize(new_size, Image.Resampling.LANCZOS)
+    return image, f"✅ Loaded: {image.width}x{image.height}px (FREE - no credits used!)"
 
 # --- UPDATED save_image function ---
 def save_image(image_data, format_choice):
-    if image_data is None: return None, "❌ No image to save";
-    pil_image = None;
+    if image_data is None: return None, "❌ No image to save"
+    pil_image = None
     if isinstance(image_data, np.ndarray):
         try:
             if image_data.dtype != np.uint8:
-                if image_data.max() <= 1.0 and image_data.min() >= 0.0: image_data = (image_data * 255).astype(np.uint8);
-                else: image_data = image_data.astype(np.uint8);
-            pil_image = Image.fromarray(image_data); print("Converted NumPy array to PIL Image for saving.");
-        except Exception as e: print(f"Error converting NumPy array to PIL Image: {e}"); return None, f"❌ Save error: Could not convert image data - {e}";
-    elif isinstance(image_data, Image.Image): pil_image = image_data;
+                if image_data.max() <= 1.0 and image_data.min() >= 0.0: image_data = (image_data * 255).astype(np.uint8)
+                else: image_data = image_data.astype(np.uint8)
+            pil_image = Image.fromarray(image_data)
+            print("Converted NumPy array to PIL Image for saving.")
+        except Exception as e:
+            print(f"Error converting NumPy array to PIL Image: {e}")
+            return None, f"❌ Save error: Could not convert image data - {e}"
+    elif isinstance(image_data, Image.Image):
+        pil_image = image_data
     else:
-        if image_data is None: return None, "❌ No image data available to save.";
-        return None, f"❌ Save error: Unknown image data type: {type(image_data)}";
-    if pil_image is None: return None, "❌ Failed to prepare image for saving.";
+        if image_data is None: return None, "❌ No image data available to save."
+        return None, f"❌ Save error: Unknown image data type: {type(image_data)}"
+    
+    if pil_image is None: return None, "❌ Failed to prepare image for saving."
+    
     try:
-        suffix = '.png' if "PNG" in format_choice else '.jpg'; temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix);
-        img_to_save = pil_image;
+        suffix = '.png' if "PNG" in format_choice else '.jpg'
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+        img_to_save = pil_image
         if img_to_save.mode != 'RGB':
-            if "JPEG" in format_choice and img_to_save.mode == 'RGBA': background = Image.new("RGB", img_to_save.size, (255, 255, 255)); background.paste(img_to_save, mask=img_to_save.split()[3]); img_to_save = background;
-            else: img_to_save = img_to_save.convert('RGB');
-        if "PNG" in format_choice: img_to_save.save(temp_file.name, format="PNG");
-        else: img_to_save.save(temp_file.name, format="JPEG", quality=95);
-        temp_file.close(); print(f"Image saved temporarily to: {temp_file.name}"); return temp_file.name, "✅ Ready to download!";
-    except Exception as e: print(f"Error during image save: {e}"); return None, f"❌ Save error: {e}";
+            if "JPEG" in format_choice and img_to_save.mode == 'RGBA':
+                background = Image.new("RGB", img_to_save.size, (255, 255, 255))
+                background.paste(img_to_save, mask=img_to_save.split()[3])
+                img_to_save = background
+            else:
+                img_to_save = img_to_save.convert('RGB')
+        
+        if "PNG" in format_choice:
+            img_to_save.save(temp_file.name, format="PNG")
+        else:
+            img_to_save.save(temp_file.name, format="JPEG", quality=95)
+            
+        temp_file.close()
+        print(f"Image saved temporarily to: {temp_file.name}")
+        return temp_file.name, "✅ Ready to download!"
+    except Exception as e:
+        print(f"Error during image save: {e}")
+        return None, f"❌ Save error: {e}"
 
 
 # --- Functions to format layer lists ---
 def format_layers(layers: List[TextLayer]): # For Tab 2
-    if not layers: return "No layers yet"; lines = [];
-    for l in layers: status = "👁️" if l.visible else "🚫"; txt = l.text[:20] + "..." if len(l.text) > 20 else l.text; lines.append(f"{status} Layer {l.id}: {txt} ({l.effect_type})");
-    return "\n".join(lines);
+    if not layers: return "No layers yet"
+    lines = []
+    for l in layers:
+        status = "👁️" if l.visible else "🚫"
+        txt = l.text[:20] + "..." if len(l.text) > 20 else l.text
+        lines.append(f"{status} Layer {l.id}: {txt} ({l.effect_type})")
+    return "\n".join(lines)
 
 # --- CORRECTED format_social_layers function ---
 def format_social_layers(social_layers: List[SocialLayer]) -> str:
@@ -817,7 +787,6 @@ def create_interface():
                             gr.Markdown("#### 📤 Upload (FREE)")
                             upload_img = gr.Image(label="Upload", type="pil")
                             upload_btn = gr.Button("📤 Use Image", variant="primary")
-                        with gr.Column():
                             gr.Markdown("#### 🎨 Generate AI (Uses 1 credit)")
                             prompt = gr.Textbox(label="Prompt", lines=2, placeholder="sunset over ocean...")
                             size = gr.Dropdown(list(IMAGE_SIZES.keys()), value=list(IMAGE_SIZES.keys())[0])
@@ -1022,21 +991,54 @@ def create_interface():
                     social_prepare_download_btn.click( fn=save_image, inputs=[post_preview_img, social_format_choice], outputs=[social_download_file, social_download_status] );
                 # --- END SOCIAL POST TAB ---
 
-
                 # TAB 5 - ADMIN (Now after Social Post Tab)
                 with gr.Tab("🔐 Admin"):
-                   # ... (Admin Tab code remains the same) ...
-                    gr.Markdown("## 🔐 Admin Dashboard"); gr.Markdown("*For administrators only*");
-                    with gr.Row(): admin_password = gr.Textbox( label="Admin Password", type="password", placeholder="Enter admin password to access" ); admin_login_btn = gr.Button("🔓 Access Admin Dashboard", variant="primary", size="lg");
-                    admin_message = gr.Markdown(""); with gr.Group(visible=False) as admin_panel: gr.Markdown("### 👨‍💼 Administrator Control Panel"); with gr.Row(): refresh_btn = gr.Button("🔄 Refresh Stats", variant="primary"); export_btn = gr.Button("📥 Export Users CSV", variant="secondary"); admin_logout_btn = gr.Button("🚪 Logout Admin", variant="stop"); admin_stats = gr.Markdown("Loading stats..."); with gr.Row(): export_file = gr.File(label="Download CSV", visible=False); export_message = gr.Markdown("");
-                    def admin_login(password): if not password: return ( gr.update(visible=False), "❌ Please enter password", gr.update(), gr.update(visible=False), "" ); if check_admin_password(password): stats = get_admin_stats(); return ( gr.update(visible=True), "✅ Access granted!", stats, gr.update(value=""), "" ); return ( gr.update(visible=False), "❌ Invalid password", "Enter password to view stats", gr.update(), "" ); admin_login_btn.click( admin_login, [admin_password], [admin_panel, admin_message, admin_stats, admin_password, export_message] );
-                    def admin_logout(): return ( gr.update(visible=False), "👋 Logged out from admin", "Enter password to view stats", gr.update(visible=False), "" ); admin_logout_btn.click( admin_logout, None, [admin_panel, admin_message, admin_stats, export_file, export_message] );
-                    def refresh_stats(): return get_admin_stats(), "🔄 Stats refreshed!"; refresh_btn.click( refresh_stats, None, [admin_stats, export_message] );
-                    def export_data(): file_path, message = export_user_data(); return (gr.update(value=file_path, visible=True), message) if file_path else (gr.update(visible=False), message); export_btn.click( export_data, None, [export_file, export_message] );
+                    gr.Markdown("## 🔐 Admin Dashboard")
+                    gr.Markdown("*For administrators only*")
+                    with gr.Row():
+                        admin_password = gr.Textbox( label="Admin Password", type="password", placeholder="Enter admin password to access" )
+                        admin_login_btn = gr.Button("🔓 Access Admin Dashboard", variant="primary", size="lg")
+                    admin_message = gr.Markdown("")
+                    with gr.Group(visible=False) as admin_panel:
+                        gr.Markdown("### 👨‍💼 Administrator Control Panel")
+                        with gr.Row():
+                            refresh_btn = gr.Button("🔄 Refresh Stats", variant="primary")
+                            export_btn = gr.Button("📥 Export Users CSV", variant="secondary")
+                            admin_logout_btn = gr.Button("🚪 Logout Admin", variant="stop")
+                        admin_stats = gr.Markdown("Loading stats...")
+                        with gr.Row():
+                            export_file = gr.File(label="Download CSV", visible=False)
+                            export_message = gr.Markdown("")
+                    
+                    # Admin Handlers
+                    def admin_login(password):
+                        if not password: return ( gr.update(visible=False), "❌ Please enter password", gr.update(), gr.update(visible=False), "" )
+                        if check_admin_password(password): stats = get_admin_stats(); return ( gr.update(visible=True), "✅ Access granted!", stats, gr.update(value=""), "" )
+                        return ( gr.update(visible=False), "❌ Invalid password", "Enter password to view stats", gr.update(), "" )
+                    admin_login_btn.click( admin_login, [admin_password], [admin_panel, admin_message, admin_stats, admin_password, export_message] )
+                    
+                    def admin_logout(): return ( gr.update(visible=False), "👋 Logged out from admin", "Enter password to view stats", gr.update(visible=False), "" )
+                    admin_logout_btn.click( admin_logout, None, [admin_panel, admin_message, admin_stats, export_file, export_message] )
+                    
+                    def refresh_stats(): return get_admin_stats(), "🔄 Stats refreshed!"
+                    refresh_btn.click( refresh_stats, None, [admin_stats, export_message] )
+                    
+                    def export_data():
+                        file_path, message = export_user_data()
+                        return (gr.update(value=file_path, visible=True), message) if file_path else (gr.update(visible=False), message)
+                    export_btn.click( export_data, None, [export_file, export_message] )
 
         # --- UPDATED FEATURES SECTION with SINHALA TRANSLATIONS ---
         with gr.Row(elem_id="features_section"):
-             gr.Markdown(""" ... Features ... """) # Minified
+             gr.Markdown("""
+             ---
+             ### ✨ Features (විශේෂාංග)
+             - 🆓 මාසිකව නොමිලේ AI උත්පාදන 5ක් (5 FREE AI generations per month)
+             - 📤 අසීමිත උඩුගත කිරීම් (නොමිලේ!) (Unlimited uploads FREE!)
+             - ✍️ අසීමිත පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
+             - 🎨 නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
+             - 🔄 මාසිකව ස්වයංක්‍රීයව යළි පිහිටුවේ (Auto-resets monthly)
+             """)
 
         # --- FOOTER SECTION ---
         gr.Markdown("---") # Add a separator line
@@ -1050,8 +1052,9 @@ def create_interface():
                     show_download_button=False
                 )
             with gr.Column(scale=3):
-                terms_url = "https.www.google.com"; privacy_url = "https.www.google.com" # Dummy URLs
-                about_url = "https://lankaainexus.com/about-us/" # YOUR ABOUT US URL
+                terms_url = "https://lankaainexus.com/terms-and-conditions"
+                privacy_url = "https://lankaainexus.com/privacy-policy"
+                about_url = "https://lankaainexus.com/about-us/"
                 gr.Markdown(f"""
                 <div style="text-align: right; font-size: 0.9em; color: grey; line-height: 1.6;">
                     © {datetime.now().year} Lanka AI Nexus (Powered by Doctor On Care Pvt Ltd). All rights reserved. <br>
