@@ -328,40 +328,81 @@ def get_user_stats(user_id: int) -> str:
 # ADMIN DASHBOARD FUNCTIONS
 # ============================================
 ADMIN_PASSWORD = "YourAdminPass2024"
-def check_admin_password(password: str) -> bool: return password == ADMIN_PASSWORD
-def get_admin_stats() -> str:
-    try:
-        conn = get_db_connection();
-        if not conn: return "❌ Database not available";
-        cursor = conn.cursor(cursor_factory=RealDictCursor);
-        cursor.execute("SELECT COUNT(*) as total FROM users"); total_users = cursor.fetchone()['total'];
-        cursor.execute("SELECT plan, COUNT(*) as count FROM users GROUP BY plan ORDER BY plan"); plan_stats = cursor.fetchall();
-        cursor.execute("SELECT COUNT(*) as active FROM users WHERE created_at > NOW() - INTERVAL '30 days'"); active_users = cursor.fetchone()['active'];
-        cursor.execute("SELECT COALESCE(SUM(total_generations), 0) as total_gens, COALESCE(SUM(monthly_generations), 0) as monthly_gens FROM users"); gen_stats = cursor.fetchone();
-        cursor.execute("SELECT email, plan, created_at, total_generations, monthly_generations FROM users ORDER BY created_at DESC LIMIT 15"); recent_users = cursor.fetchall();
-        cursor.execute("SELECT COUNT(*) as today_count FROM users WHERE DATE(created_at) = CURRENT_DATE"); today_signups = cursor.fetchone()['today_count'];
-        conn.close();
-        report = f"# 📊 **ADMIN DASHBOARD**\n\n## 👥 **User Statistics**\n- **Total Users:** {total_users}\n- **New Today:** {today_signups}\n- **Active (30 days):** {active_users}\n\n## 💎 **Users by Plan**";
-        for plan in plan_stats: report += f"\n- **{plan['plan'].upper()}:** {plan['count']} users";
-        report += f"\n\n## 🎨 **Generation Statistics**\n- **Total All-Time:** {gen_stats['total_gens']} generations\n- **Used This Month:** {gen_stats['monthly_gens']} generations\n- **Average per User:** {gen_stats['total_gens'] // max(total_users, 1)} generations\n\n## 🆕 **Recent Users (Latest 15)**\n| Email | Plan | Joined | Monthly | Total |\n|-------|------|--------|---------|-------|";
-        for user in recent_users: date = user['created_at'].strftime('%m/%d') if user['created_at'] else 'N/A'; email = user['email'][:20] + '...' if len(user['email']) > 20 else user['email']; report += f"\n| {email} | {user['plan']} | {date} | {user['monthly_generations']} | {user['total_generations']} |";
-        report += f"\n\n---\n*Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}*";
-        return report;
-    except Exception as e: return f"❌ Error loading stats: {str(e)}\n\nMake sure your database tables are created.";
-def export_user_data() -> tuple:
-    try:
-        conn = get_db_connection();
-        if not conn: return None, "❌ Database not available";
-        cursor = conn.cursor(cursor_factory=RealDictCursor);
-        cursor.execute("SELECT email, plan, monthly_generations, total_generations, created_at, is_active FROM users ORDER BY created_at DESC");
-        users = cursor.fetchall(); conn.close();
-        if not users: return None, "No users found";
-        csv_data = "Email,Plan,Monthly Usage,Total Usage,Joined Date,Status\n";
-        for user in users: date = user['created_at'].strftime('%Y-%m-%d %H:%M') if user['created_at'] else 'N/A'; status = "Active" if user['is_active'] else "Inactive"; csv_data += f"{user['email']},{user['plan']},{user['monthly_generations']},{user['total_generations']},{date},{status}\n";
-        temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv'); temp_file.write(csv_data); temp_file.close();
-        return temp_file.name, f"✅ Exported {len(users)} users to CSV";
-    except Exception as e: return None, f"❌ Export error: {str(e)}";
+def check_admin_password(password: str) -> bool:
+    return password == ADMIN_PASSWORD
 
+def get_admin_stats() -> str:
+    """Get complete admin statistics"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return "❌ Database not available"
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("SELECT COUNT(*) as total FROM users")
+        total_users = cursor.fetchone()['total']
+        cursor.execute("SELECT plan, COUNT(*) as count FROM users GROUP BY plan ORDER BY plan")
+        plan_stats = cursor.fetchall()
+        cursor.execute("SELECT COUNT(*) as active FROM users WHERE created_at > NOW() - INTERVAL '30 days'")
+        active_users = cursor.fetchone()['active']
+        cursor.execute("SELECT COALESCE(SUM(total_generations), 0) as total_gens, COALESCE(SUM(monthly_generations), 0) as monthly_gens FROM users")
+        gen_stats = cursor.fetchone()
+        cursor.execute("SELECT email, plan, created_at, total_generations, monthly_generations FROM users ORDER BY created_at DESC LIMIT 15")
+        recent_users = cursor.fetchall()
+        cursor.execute("SELECT COUNT(*) as today_count FROM users WHERE DATE(created_at) = CURRENT_DATE")
+        today_signups = cursor.fetchone()['today_count']
+        conn.close()
+        report = f"""# 📊 **ADMIN DASHBOARD**
+
+## 👥 **User Statistics**
+- **Total Users:** {total_users}
+- **New Today:** {today_signups}
+- **Active (30 days):** {active_users}
+
+## 💎 **Users by Plan**"""
+        for plan in plan_stats:
+            report += f"\n- **{plan['plan'].upper()}:** {plan['count']} users"
+        report += f"""
+
+## 🎨 **Generation Statistics**
+- **Total All-Time:** {gen_stats['total_gens']} generations
+- **Used This Month:** {gen_stats['monthly_gens']} generations
+- **Average per User:** {gen_stats['total_gens'] // max(total_users, 1)} generations
+
+## 🆕 **Recent Users (Latest 15)**
+| Email | Plan | Joined | Monthly | Total |
+|-------|------|--------|---------|-------|"""
+        for user in recent_users:
+            date = user['created_at'].strftime('%m/%d') if user['created_at'] else 'N/A'
+            email = user['email'][:20] + '...' if len(user['email']) > 20 else user['email']
+            report += f"\n| {email} | {user['plan']} | {date} | {user['monthly_generations']} | {user['total_generations']} |"
+        report += f"\n\n---\n*Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}*"
+        return report
+    except Exception as e:
+        return f"❌ Error loading stats: {str(e)}\n\nMake sure your database tables are created."
+
+def export_user_data() -> tuple:
+    """Export all user data as CSV format"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return None, "❌ Database not available"
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("SELECT email, plan, monthly_generations, total_generations, created_at, is_active FROM users ORDER BY created_at DESC")
+        users = cursor.fetchall()
+        conn.close()
+        if not users:
+            return None, "No users found"
+        csv_data = "Email,Plan,Monthly Usage,Total Usage,Joined Date,Status\n"
+        for user in users:
+            date = user['created_at'].strftime('%Y-%m-%d %H:%M') if user['created_at'] else 'N/A'
+            status = "Active" if user['is_active'] else "Inactive"
+            csv_data += f"{user['email']},{user['plan']},{user['monthly_generations']},{user['total_generations']},{date},{status}\n"
+        temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv')
+        temp_file.write(csv_data)
+        temp_file.close()
+        return temp_file.name, f"✅ Exported {len(users)} users to CSV"
+    except Exception as e:
+        return None, f"❌ Export error: {str(e)}"
 
 # ============================================
 # FONTS & CONFIG
@@ -373,19 +414,31 @@ FONT_PATHS = {
     "Oswald Bold": "fonts/Oswald-Bold.ttf", "Oswald Regular": "fonts/Oswald-Regular.ttf", "Hind Madurai Bold (Tamil)": "fonts/HindMadurai-Bold.ttf",
     "Hind Madurai Regular (Tamil)": "fonts/HindMadurai-Regular.ttf", "Catamaran (Tamil)": "fonts/Catamaran-Tamil.ttf"
 }
-fonts_available = {}; print("--- Loading Fonts ---");
+fonts_available = {}
+print("--- Loading Fonts ---")
 for name, path in FONT_PATHS.items():
     try:
-        print(f"Attempting to load: {name} from {path}");
-        if not os.path.exists(path): print(f"  ❌ FAILED: Font file not found at '{path}'"); continue;
-        ImageFont.truetype(path, 20); fonts_available[name] = path; print(f"  ✅ SUCCESS: Loaded {name}");
-    except Exception as e: print(f"  ❌ FAILED to load font '{name}' from path '{path}': {e}");
-print("--- Finished Loading Fonts ---");
-if not fonts_available: print("⚠️ WARNING: No fonts loaded successfully. Using system fallback."); fonts_available["Fallback"] = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
-try: import replicate; REPLICATE_AVAILABLE = True;
-except: REPLICATE_AVAILABLE = False;
-REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN", "");
-IMAGE_SIZES = { "Instagram Post (1:1)": (1080, 1080), "Instagram Story (9:16)": (1080, 1920), "YouTube Thumbnail (16:9)": (1280, 720) };
+        print(f"Attempting to load: {name} from {path}")
+        if not os.path.exists(path):
+             print(f"  ❌ FAILED: Font file not found at '{path}'")
+             continue
+        ImageFont.truetype(path, 20)
+        fonts_available[name] = path
+        print(f"  ✅ SUCCESS: Loaded {name}")
+    except Exception as e:
+         print(f"  ❌ FAILED to load font '{name}' from path '{path}': {e}")
+print("--- Finished Loading Fonts ---")
+if not fonts_available:
+    print("⚠️ WARNING: No fonts loaded successfully. Using system fallback.")
+    fonts_available["Fallback"] = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+
+try:
+    import replicate
+    REPLICATE_AVAILABLE = True
+except:
+    REPLICATE_AVAILABLE = False
+REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN", "")
+IMAGE_SIZES = { "Instagram Post (1:1)": (1080, 1080), "Instagram Story (9:16)": (1080, 1920), "YouTube Thumbnail (16:9)": (1280, 720) }
 PRESETS = {
     "Bold & Readable": {"text_color": "#FFFFFF", "outline_color": "#000000", "outline_width": 10, "shadow_blur": 5, "add_shadow": True, "add_glow": False, "effect_type": "normal"},
     "Neon Glow 🌟": {"text_color": "#00FFFF", "outline_color": "#FF00FF", "outline_width": 3, "shadow_blur": 20, "add_shadow": False, "add_glow": True, "effect_type": "neon"},
@@ -426,101 +479,213 @@ class SocialLayer: # For Tab 4
 # ============================================
 # ADVANCED RENDERING FUNCTIONS (for Tab 2 & 4)
 # ============================================
-# ... (All apply_ effect functions remain the same) ...
 def apply_neon_effect(draw, text, font, x, y, base_color, glow_color, intensity=3):
-    base_rgb = tuple(int(base_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)); glow_rgb = tuple(int(glow_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4));
+    """Create neon glow effect"""
+    base_rgb = tuple(int(base_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    glow_rgb = tuple(int(glow_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
     for glow_size in range(intensity*5, 0, -1):
-        alpha = int(120 * (glow_size / (intensity*5)));
-        for angle in range(0, 360, 30): gx = int(glow_size * 0.5 * np.cos(np.radians(angle))); gy = int(glow_size * 0.5 * np.sin(np.radians(angle))); draw.text((x + gx, y + gy), text, font=font, fill=glow_rgb + (alpha,));
-    draw.text((x, y), text, font=font, fill=(255, 255, 255, 255)); draw.text((x, y), text, font=font, fill=base_rgb + (200,));
+        alpha = int(120 * (glow_size / (intensity*5)))
+        for angle in range(0, 360, 30):
+            gx = int(glow_size * 0.5 * np.cos(np.radians(angle)))
+            gy = int(glow_size * 0.5 * np.sin(np.radians(angle)))
+            draw.text((x + gx, y + gy), text, font=font, fill=glow_rgb + (alpha,))
+    draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))
+    draw.text((x, y), text, font=font, fill=base_rgb + (200,))
+
 def apply_chrome_effect(draw, text, font, x, y):
-    for offset in range(3, -1, -1): gray_value = 80 + offset * 40; draw.text((x - offset, y - offset), text, font=font, fill=(gray_value, gray_value, gray_value, 255));
-    draw.text((x + 1, y + 1), text, font=font, fill=(255, 255, 255, 180)); draw.text((x, y), text, font=font, fill=(192, 192, 192, 255));
+    """Create chrome/metallic effect"""
+    for offset in range(3, -1, -1):
+        gray_value = 80 + offset * 40
+        draw.text((x - offset, y - offset), text, font=font, fill=(gray_value, gray_value, gray_value, 255))
+    draw.text((x + 1, y + 1), text, font=font, fill=(255, 255, 255, 180))
+    draw.text((x, y), text, font=font, fill=(192, 192, 192, 255))
+
+# --- CORRECTED MULTI-LINE FUNCTION ---
 def apply_fire_effect(draw, text, font, x, y):
-    fire_colors = [(255, 255, 0), (255, 200, 0), (255, 140, 0), (255, 69, 0), (139, 0, 0)];
-    for i, color in enumerate(fire_colors): offset = i * 2; alpha = 255 - (i * 40); draw.text((x, y - offset), text, font=font, fill=color + (alpha,)); if i > 0: draw.text((x - 1, y - offset + 1), text, font=font, fill=color + (alpha//2,)); draw.text((x + 1, y - offset + 1), text, font=font, fill=color + (alpha//2,));
+    """Create fire effect"""
+    fire_colors = [
+        (255, 255, 0),    # Yellow core
+        (255, 200, 0),    # Orange-yellow
+        (255, 140, 0),    # Orange
+        (255, 69, 0),     # Red-orange
+        (139, 0, 0)       # Dark red
+    ]
+    for i, color in enumerate(fire_colors):
+        offset = i * 2
+        alpha = 255 - (i * 40)
+        draw.text((x, y - offset), text, font=font, fill=color + (alpha,))
+        if i > 0:
+            draw.text((x - 1, y - offset + 1), text, font=font, fill=color + (alpha//2,))
+            draw.text((x + 1, y - offset + 1), text, font=font, fill=color + (alpha//2,))
+# --- END CORRECTION ---
+
 def apply_3d_shadow_effect(draw, text, font, x, y, text_color, shadow_color, depth=5):
-    text_rgb = tuple(int(text_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)); shadow_rgb = tuple(int(shadow_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4));
-    for i in range(depth, 0, -1): draw.text((x + i*2, y + i*2), text, font=font, fill=shadow_rgb + (200,));
-    draw.text((x, y), text, font=font, fill=text_rgb + (255,));
+    """Create 3D shadow effect"""
+    text_rgb = tuple(int(text_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    shadow_rgb = tuple(int(shadow_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    for i in range(depth, 0, -1):
+        draw.text((x + i*2, y + i*2), text, font=font, fill=shadow_rgb + (200,))
+    draw.text((x, y), text, font=font, fill=text_rgb + (255,))
+
 def apply_gradient_effect(image, draw, text, font, x, y, color1, color2):
-    bbox = font.getbbox(text); text_width = bbox[2] - bbox[0]; text_height = bbox[3] - bbox[1];
-    gradient = Image.new('RGBA', (text_width, text_height), (0, 0, 0, 0)); grad_draw = ImageDraw.Draw(gradient);
-    c1_rgb = tuple(int(color1.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)); c2_rgb = tuple(int(color2.lstrip('#')[i:i+2], 16) for i in (0, 2, 4));
-    for i in range(text_height): ratio = i / text_height; r = int(c1_rgb[0] * (1 - ratio) + c2_rgb[0] * ratio); g = int(c1_rgb[1] * (1 - ratio) + c2_rgb[1] * ratio); b = int(c1_rgb[2] * (1 - ratio) + c2_rgb[2] * ratio); grad_draw.rectangle([0, i, text_width, i+1], fill=(r, g, b, 255));
-    mask = Image.new('L', (text_width, text_height), 0); mask_draw = ImageDraw.Draw(mask); mask_draw.text((0, 0), text, font=font, fill=255);
-    gradient.putalpha(mask); image.paste(gradient, (x, y), gradient);
-def render_social_text_simple(draw, text, font, x, y, color, anchor): draw.text((x, y), text, fill=color, font=font, anchor=anchor);
+    """Create gradient text effect"""
+    bbox = font.getbbox(text)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+    gradient = Image.new('RGBA', (text_width, text_height), (0, 0, 0, 0))
+    grad_draw = ImageDraw.Draw(gradient)
+    c1_rgb = tuple(int(color1.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    c2_rgb = tuple(int(color2.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    for i in range(text_height):
+        ratio = i / text_height
+        r = int(c1_rgb[0] * (1 - ratio) + c2_rgb[0] * ratio)
+        g = int(c1_rgb[1] * (1 - ratio) + c2_rgb[1] * ratio)
+        b = int(c1_rgb[2] * (1 - ratio) + c2_rgb[2] * ratio)
+        grad_draw.rectangle([0, i, text_width, i+1], fill=(r, g, b, 255))
+    mask = Image.new('L', (text_width, text_height), 0)
+    mask_draw = ImageDraw.Draw(mask)
+    mask_draw.text((0, 0), text, font=font, fill=255)
+    gradient.putalpha(mask)
+    image.paste(gradient, (x, y), gradient)
+
+def render_social_text_simple(draw, text, font, x, y, color, anchor):
+    """Basic text drawing for social posts"""
+    draw.text((x, y), text, fill=color, font=font, anchor=anchor)
+
 def render_social_text_layer(draw, props, image=None):
-    font_path = fonts_available.get(props.get('font_key'), list(fonts_available.values())[0]); width, _ = image.size;
-    heading_font_size = max(30, int(width / 18)); para_font_size = max(20, int(width / 35));
-    font_size = heading_font_size if props.get('is_heading') else para_font_size; font_obj = ImageFont.truetype(font_path, font_size);
-    text = props.get('text', ''); color = props.get('color', '#000000'); alignment = props.get('align', 'Left');
-    is_heading = props.get('is_heading', False); effect = props.get('effect_type', 'normal'); outline_color = props.get('outline_color', '#000000');
-    text_y = 0; text_x = 0; text_anchor = "la";
-    if is_heading: bbox = draw.textbbox((0,0), text, font=font_obj, anchor="lt"); text_width = bbox[2] - bbox[0]; text_x = (width - text_width) // 2; text_y = int(image.height * 0.1); text_anchor = "la";
-    else: text_y = int(image.height * 0.25); text_x = int(width * 0.1);
-        if alignment == "Center": text_anchor = "ma"; text_x = width // 2;
-        elif alignment == "Right": text_anchor = "ra"; text_x = int(width * 0.9);
-    if effect == "neon": apply_neon_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
-    elif effect == "chrome": apply_chrome_effect(draw, text, font_obj, text_x, text_y)
-    elif effect == "fire": apply_fire_effect(draw, text, font_obj, text_x, text_y)
-    elif effect == "3d": apply_3d_shadow_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
-    elif effect == "gradient" and image: apply_gradient_effect(image, draw, text, font_obj, text_x, text_y, color, outline_color)
-    else: draw.text((text_x, text_y), text, fill=color, font=font_obj, anchor=text_anchor);
+    """Renderer for social post text layers, using effect functions"""
+    font_path = fonts_available.get(props.get('font_key'), list(fonts_available.values())[0])
+    width, _ = image.size
+    heading_font_size = max(30, int(width / 18))
+    para_font_size = max(20, int(width / 35))
+    font_size = heading_font_size if props.get('is_heading') else para_font_size
+    font_obj = ImageFont.truetype(font_path, font_size)
+    text = props.get('text', '')
+    color = props.get('color', '#000000')
+    alignment = props.get('align', 'Left')
+    is_heading = props.get('is_heading', False)
+    effect = props.get('effect_type', 'normal')
+    outline_color = props.get('outline_color', '#000000')
+    text_y = 0
+    text_x = 0
+    text_anchor = "la"
+    if is_heading:
+        bbox = draw.textbbox((0,0), text, font=font_obj, anchor="lt")
+        text_width = bbox[2] - bbox[0]
+        text_x = (width - text_width) // 2
+        text_y = int(image.height * 0.1)
+        text_anchor = "la"
+    else:
+        text_y = int(image.height * 0.25)
+        text_x = int(width * 0.1)
+        if alignment == "Center":
+            text_anchor = "ma"
+            text_x = width // 2
+        elif alignment == "Right":
+            text_anchor = "ra"
+            text_x = int(width * 0.9)
+    
+    # Call effect renderers
+    if effect == "neon":
+        apply_neon_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
+    elif effect == "chrome":
+        apply_chrome_effect(draw, text, font_obj, text_x, text_y)
+    elif effect == "fire":
+        apply_fire_effect(draw, text, font_obj, text_x, text_y)
+    elif effect == "3d":
+        apply_3d_shadow_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
+    elif effect == "gradient" and image:
+        apply_gradient_effect(image, draw, text, font_obj, text_x, text_y, color, outline_color)
+    else:
+        draw.text((text_x, text_y), text, fill=color, font=font_obj, anchor=text_anchor)
 
 # --- RENDERER FOR TAB 2 ---
 def render_all_layers(base_image, layers: List[TextLayer]):
-    if base_image is None or not layers: return base_image;
-    result = base_image.copy().convert('RGBA');
+    """Render all text layers onto base image with advanced effects for Tab 2"""
+    if base_image is None or not layers:
+        return base_image
+    result = base_image.copy().convert('RGBA')
     for layer in layers:
-        if not layer.visible: continue;
+        if not layer.visible:
+            continue
         try:
-            text_layer_img = Image.new('RGBA', result.size, (0, 0, 0, 0)); draw = ImageDraw.Draw(text_layer_img);
-            font_path = fonts_available.get(layer.font_style, list(fonts_available.values())[0]); font = ImageFont.truetype(font_path, layer.font_size);
+            text_layer_img = Image.new('RGBA', result.size, (0, 0, 0, 0))
+            draw = ImageDraw.Draw(text_layer_img)
+            font_path = fonts_available.get(layer.font_style, list(fonts_available.values())[0])
+            font = ImageFont.truetype(font_path, layer.font_size)
             if hasattr(layer, 'effect_type') and layer.effect_type != "normal":
-                if layer.effect_type == "gradient": render_text_layer_advanced(draw, layer, font, text_layer_img);
-                else: render_text_layer_advanced(draw, layer, font);
-            else: render_text_layer(draw, layer, font);
-            result = Image.alpha_composite(result, text_layer_img);
-        except Exception as e: print(f"Error rendering layer ID {layer.id}: {e}");
-    return result.convert('RGB');
+                if layer.effect_type == "gradient":
+                    render_text_layer_advanced(draw, layer, font, text_layer_img)
+                else:
+                    render_text_layer_advanced(draw, layer, font)
+            else:
+                render_text_layer(draw, layer, font) # Call original simple renderer
+            result = Image.alpha_composite(result, text_layer_img)
+        except Exception as e:
+            print(f"Error rendering layer ID {layer.id}: {e}")
+    return result.convert('RGB')
+
 
 # --- RENDERER FOR TAB 4 (SOCIAL POST) ---
 def render_social_post(size_key, bg_color, social_layers: List[SocialLayer]):
+    """Renders the social post based on background and layers state"""
     try:
-        width, height = post_sizes[size_key];
-        print(f"Rendering social post with bg_color: {bg_color}, type: {type(bg_color)}");
-        if not isinstance(bg_color, str) or not bg_color.startswith('#'): print(f"Warning: Invalid bg_color '{bg_color}', defaulting to white."); bg_color = "#FFFFFF";
-        img = Image.new('RGBA', (width, height), bg_color); draw = ImageDraw.Draw(img);
+        width, height = post_sizes[size_key]
+        print(f"Rendering social post with bg_color: {bg_color}, type: {type(bg_color)}")
+        if not isinstance(bg_color, str) or not bg_color.startswith('#'):
+             print(f"Warning: Invalid bg_color '{bg_color}', defaulting to white.")
+             bg_color = "#FFFFFF"
+        
+        img = Image.new('RGBA', (width, height), bg_color)
+        draw = ImageDraw.Draw(img)
+
         for layer in social_layers:
-            if not layer.visible: continue;
-            props = layer.properties;
+            if not layer.visible:
+                continue
+            props = layer.properties
             if layer.type == 'text':
-                try: render_social_text_layer(draw, props, img);
-                except Exception as e: print(f"Error drawing text layer {layer.id}: {e}");
+                try:
+                    render_social_text_layer(draw, props, img)
+                except Exception as e:
+                    print(f"Error drawing text layer {layer.id}: {e}")
             elif layer.type == 'logo':
                 try:
-                    uploaded_logo = props.get('logo_obj');
-                    if not uploaded_logo: continue;
-                    logo_size_str = props.get('size_str', 'Medium (100px)'); logo_x_pos = props.get('x', 50); logo_y_pos = props.get('y', 50);
-                    if "Small" in logo_size_str: target_size = 50;
-                    elif "Large" in logo_size_str: target_size = 150;
-                    else: target_size = 100;
-                    logo = uploaded_logo.copy(); logo.thumbnail((target_size, target_size), Image.Resampling.LANCZOS);
-                    paste_x = max(0, int(logo_x_pos) - logo.width // 2); paste_y = max(0, int(logo_y_pos) - logo.height // 2);
-                    paste_x = min(paste_x, width - logo.width); paste_y = min(paste_y, height - logo.height);
-                    if logo.mode == 'RGBA': img.paste(logo, (paste_x, paste_y), logo);
-                    else: img.paste(logo, (paste_x, paste_y));
-                except Exception as e: print(f"Error drawing logo layer {layer.id}: {e}");
-        final_rgb_img = Image.new("RGB", img.size, (255, 255, 255));
-        if img.mode != 'RGBA': img = img.convert('RGBA');
-        final_rgb_img.paste(img, mask=img.split()[3]);
-        return final_rgb_img;
+                    uploaded_logo = props.get('logo_obj')
+                    if not uploaded_logo:
+                        continue
+                    logo_size_str = props.get('size_str', 'Medium (100px)')
+                    logo_x_pos = props.get('x', 50)
+                    logo_y_pos = props.get('y', 50)
+                    if "Small" in logo_size_str:
+                        target_size = 50
+                    elif "Large" in logo_size_str:
+                        target_size = 150
+                    else:
+                        target_size = 100
+                    logo = uploaded_logo.copy()
+                    logo.thumbnail((target_size, target_size), Image.Resampling.LANCZOS)
+                    paste_x = max(0, int(logo_x_pos) - logo.width // 2)
+                    paste_y = max(0, int(logo_y_pos) - logo.height // 2)
+                    paste_x = min(paste_x, width - logo.width)
+                    paste_y = min(paste_y, height - logo.height)
+                    if logo.mode == 'RGBA':
+                        img.paste(logo, (paste_x, paste_y), logo)
+                    else:
+                        img.paste(logo, (paste_x, paste_y))
+                except Exception as e:
+                    print(f"Error drawing logo layer {layer.id}: {e}")
+
+        final_rgb_img = Image.new("RGB", img.size, (255, 255, 255))
+        if img.mode != 'RGBA':
+            img = img.convert('RGBA')
+        final_rgb_img.paste(img, mask=img.split()[3])
+        return final_rgb_img
     except Exception as e:
-        print(f"Error rendering social post: {e}");
-        error_img = Image.new('RGB', (300, 100), color = 'grey'); draw = ImageDraw.Draw(error_img);
-        draw.text((10, 10), f"Render Error: {e}", fill='white'); return error_img;
+        print(f"Error rendering social post: {e}")
+        error_img = Image.new('RGB', (300, 100), color = 'grey')
+        draw = ImageDraw.Draw(error_img)
+        draw.text((10, 10), f"Render Error: {e}", fill='white')
+        return error_img
 
 # ============================================
 # IMAGE GENERATION FUNCTIONS
@@ -754,7 +919,6 @@ def create_interface():
                     def admin_logout(): return ( gr.update(visible=False), "👋 Logged out from admin", "Enter password to view stats", gr.update(visible=False), "" ); admin_logout_btn.click( admin_logout, None, [admin_panel, admin_message, admin_stats, export_file, export_message] );
                     def refresh_stats(): return get_admin_stats(), "🔄 Stats refreshed!"; refresh_btn.click( refresh_stats, None, [admin_stats, export_message] );
                     def export_data(): file_path, message = export_user_data(); return (gr.update(value=file_path, visible=True), message) if file_path else (gr.update(visible=False), message); export_btn.click( export_data, None, [export_file, export_message] );
-
 
         # --- UPDATED FEATURES SECTION with SINHALA TRANSLATIONS ---
         with gr.Row(elem_id="features_section"):
