@@ -21,7 +21,6 @@ import glob # For finding templates
 # ============================================
 # DATABASE SETUP
 # ============================================
-
 # Check for required packages
 try:
     import psycopg2
@@ -36,49 +35,26 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
     print("❌ WARNING: DATABASE_URL not found in environment variables!")
-    print("Add it to Secrets in HF Space Settings")
 
 def get_db_connection():
     """Get PostgreSQL database connection with better error handling"""
-    # First, check if psycopg2 is installed
     try:
         import psycopg2
     except ImportError:
         print("❌ psycopg2-binary not installed!")
         print("Fix: Add 'psycopg2-binary' to requirements.txt")
         return None
-
-    # Get the database URL from environment
     DATABASE_URL = os.getenv("DATABASE_URL")
-
     if not DATABASE_URL:
         print("❌ DATABASE_URL not found in Hugging Face Secrets!")
-        print("Fix: Go to Settings → Variables and secrets → New secret")
-        print("Name: DATABASE_URL")
-        print("Value: Your Supabase connection string")
         return None
-
-    # Try to connect with better error messages
     try:
         if DATABASE_URL.startswith("postgres://"):
             DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-        
         conn = psycopg2.connect(DATABASE_URL)
         return conn
-
     except psycopg2.OperationalError as e:
-        error_msg = str(e)
-        print(f"❌ Connection failed: {error_msg[:100]}")
-        if "password authentication failed" in error_msg:
-            print("🔧 Fix: Check your password in Supabase dashboard")
-        elif "could not connect to server" in error_msg:
-            print("🔧 Fix: Check if Supabase project is active (not paused)")
-        elif "timeout" in error_msg:
-            print("🔧 Fix: Supabase might be paused. Go to dashboard and unpause it")
-        else:
-            print("🔧 Fix: Check your connection string in Supabase Settings → Database")
-
-        # Try Method 2: Parse URL and reconnect
+        print(f"❌ Connection failed: {str(e)[:100]}")
         try:
             print("🔄 Trying alternative connection method...")
             import urllib.parse
@@ -103,30 +79,20 @@ def get_db_connection():
 # USER MANAGEMENT FUNCTIONS
 # ============================================
 def hash_password(password: str) -> str:
-    """Hash password using SHA-256"""
     return hashlib.sha256(password.encode()).hexdigest()
 
 def register_user(email: str, password: str) -> Tuple[bool, str]:
-    """Register new user"""
-    if not email or not password:
-        return False, "❌ Email and password required"
-    if len(password) < 6:
-        return False, "❌ Password must be at least 6 characters"
+    if not email or not password: return False, "❌ Email and password required"
+    if len(password) < 6: return False, "❌ Password must be at least 6 characters"
     try:
         conn = get_db_connection()
-        if not conn:
-            return False, "❌ Database not available"
+        if not conn: return False, "❌ Database not available"
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
-        if cursor.fetchone():
-            conn.close()
-            return False, "❌ Email already registered"
+        if cursor.fetchone(): conn.close(); return False, "❌ Email already registered"
         password_hash = hash_password(password)
         current_month = datetime.now().strftime('%Y-%m')
-        cursor.execute('''
-            INSERT INTO users (email, password_hash, last_reset_date)
-            VALUES (%s, %s, %s)
-        ''', (email, password_hash, current_month))
+        cursor.execute(''' INSERT INTO users (email, password_hash, last_reset_date) VALUES (%s, %s, %s) ''', (email, password_hash, current_month))
         conn.commit()
         conn.close()
         return True, "✅ Account created! Please login."
@@ -134,34 +100,23 @@ def register_user(email: str, password: str) -> Tuple[bool, str]:
         return False, f"❌ Error: {str(e)}"
 
 def login_user(email: str, password: str) -> Tuple[bool, str, Optional[dict]]:
-    """Login user and return user info"""
-    if not email or not password:
-        return False, "❌ Email and password required", None
+    if not email or not password: return False, "❌ Email and password required", None
     try:
         conn = get_db_connection()
-        if not conn:
-            return False, "❌ Database not available", None
+        if not conn: return False, "❌ Database not available", None
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         password_hash = hash_password(password)
-        cursor.execute('''
-            SELECT id, email, plan, monthly_generations, last_reset_date, total_generations
-            FROM users
-            WHERE email = %s AND password_hash = %s AND is_active = true
-        ''', (email, password_hash))
+        cursor.execute(''' SELECT id, email, plan, monthly_generations, last_reset_date, total_generations FROM users WHERE email = %s AND password_hash = %s AND is_active = true ''', (email, password_hash))
         user = cursor.fetchone()
         conn.close()
-        if not user:
-            return False, "❌ Invalid email or password", None
+        if not user: return False, "❌ Invalid email or password", None
         current_month = datetime.now().strftime('%Y-%m')
         if user['last_reset_date'] != current_month:
             reset_monthly_usage(user['id'])
             user['monthly_generations'] = 0
         user_info = {
-            'id': user['id'],
-            'email': user['email'],
-            'plan': user['plan'],
-            'monthly_generations': user['monthly_generations'],
-            'total_generations': user['total_generations'],
+            'id': user['id'], 'email': user['email'], 'plan': user['plan'],
+            'monthly_generations': user['monthly_generations'], 'total_generations': user['total_generations'],
             'remaining': get_remaining_generations(user['plan'], user['monthly_generations'])
         }
         return True, f"✅ Welcome back, {email}!", user_info
@@ -169,59 +124,34 @@ def login_user(email: str, password: str) -> Tuple[bool, str, Optional[dict]]:
         return False, f"❌ Error: {str(e)}", None
 
 def get_remaining_generations(plan: str, used: int) -> int:
-    """Calculate remaining generations for plan"""
     limits = {'free': 5, 'starter': 25, 'popular': 60, 'premium': 200}
     limit = limits.get(plan, 5)
     return max(0, limit - used)
 
 def reset_monthly_usage(user_id: int):
-    """Reset monthly generation count"""
     try:
         conn = get_db_connection()
-        if not conn:
-            return
+        if not conn: return
         cursor = conn.cursor()
         current_month = datetime.now().strftime('%Y-%m')
-        cursor.execute('''
-            UPDATE users
-            SET monthly_generations = 0, last_reset_date = %s
-            WHERE id = %s
-        ''', (current_month, user_id))
+        cursor.execute(''' UPDATE users SET monthly_generations = 0, last_reset_date = %s WHERE id = %s ''', (current_month, user_id))
         conn.commit()
         conn.close()
-    except Exception as e:
-        print(f"Error resetting usage: {e}")
+    except Exception as e: print(f"Error resetting usage: {e}")
 
 def increment_usage(user_id: int) -> Tuple[bool, str]:
-    """Increment user's generation count"""
     try:
         conn = get_db_connection()
-        if not conn:
-            return False, "❌ Database not available"
+        if not conn: return False, "❌ Database not available"
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute('''
-            SELECT monthly_generations, plan FROM users WHERE id = %s
-        ''', (user_id,))
+        cursor.execute(''' SELECT monthly_generations, plan FROM users WHERE id = %s ''', (user_id,))
         result = cursor.fetchone()
-        if not result:
-            conn.close()
-            return False, "❌ User not found"
-        monthly_gens = result['monthly_generations']
-        plan = result['plan']
+        if not result: conn.close(); return False, "❌ User not found"
+        monthly_gens = result['monthly_generations']; plan = result['plan']
         remaining = get_remaining_generations(plan, monthly_gens)
-        if remaining <= 0:
-            conn.close()
-            return False, "❌ Monthly limit reached! Upgrade your plan or wait for next month."
-        cursor.execute('''
-            UPDATE users
-            SET monthly_generations = monthly_generations + 1,
-                total_generations = total_generations + 1
-            WHERE id = %s
-        ''', (user_id,))
-        cursor.execute('''
-            INSERT INTO usage_logs (user_id, action_type)
-            VALUES (%s, %s)
-        ''', (user_id, 'ai_generation'))
+        if remaining <= 0: conn.close(); return False, "❌ Monthly limit reached! Upgrade your plan or wait for next month."
+        cursor.execute(''' UPDATE users SET monthly_generations = monthly_generations + 1, total_generations = total_generations + 1 WHERE id = %s ''', (user_id,))
+        cursor.execute(''' INSERT INTO usage_logs (user_id, action_type) VALUES (%s, %s) ''', (user_id, 'ai_generation'))
         conn.commit()
         conn.close()
         new_remaining = remaining - 1
@@ -230,16 +160,11 @@ def increment_usage(user_id: int) -> Tuple[bool, str]:
         return False, f"❌ Error: {str(e)}"
 
 def get_user_stats(user_id: int) -> str:
-    """Get user statistics for dashboard"""
     try:
         conn = get_db_connection()
-        if not conn:
-            return "❌ Database not available"
+        if not conn: return "❌ Database not available"
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute('''
-            SELECT email, plan, monthly_generations, total_generations, created_at
-            FROM users WHERE id = %s
-        ''', (user_id,))
+        cursor.execute(''' SELECT email, plan, monthly_generations, total_generations, created_at FROM users WHERE id = %s ''', (user_id,))
         user = cursor.fetchone()
         conn.close()
         if user:
@@ -256,7 +181,6 @@ def get_user_stats(user_id: int) -> str:
     except Exception as e:
         return f"❌ Error: {str(e)}"
 
-
 # ============================================
 # ADMIN DASHBOARD FUNCTIONS
 # ============================================
@@ -265,11 +189,9 @@ def check_admin_password(password: str) -> bool:
     return password == ADMIN_PASSWORD
 
 def get_admin_stats() -> str:
-    """Get complete admin statistics"""
     try:
         conn = get_db_connection()
-        if not conn:
-            return "❌ Database not available"
+        if not conn: return "❌ Database not available"
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute("SELECT COUNT(*) as total FROM users")
         total_users = cursor.fetchone()['total']
@@ -284,58 +206,30 @@ def get_admin_stats() -> str:
         cursor.execute("SELECT COUNT(*) as today_count FROM users WHERE DATE(created_at) = CURRENT_DATE")
         today_signups = cursor.fetchone()['today_count']
         conn.close()
-        report = f"""# 📊 **ADMIN DASHBOARD**
-
-## 👥 **User Statistics**
-- **Total Users:** {total_users}
-- **New Today:** {today_signups}
-- **Active (30 days):** {active_users}
-
-## 💎 **Users by Plan**"""
-        for plan in plan_stats:
-            report += f"\n- **{plan['plan'].upper()}:** {plan['count']} users"
-        report += f"""
-
-## 🎨 **Generation Statistics**
-- **Total All-Time:** {gen_stats['total_gens']} generations
-- **Used This Month:** {gen_stats['monthly_gens']} generations
-- **Average per User:** {gen_stats['total_gens'] // max(total_users, 1)} generations
-
-## 🆕 **Recent Users (Latest 15)**
-| Email | Plan | Joined | Monthly | Total |
-|-------|------|--------|---------|-------|"""
-        for user in recent_users:
-            date = user['created_at'].strftime('%m/%d') if user['created_at'] else 'N/A'
-            email = user['email'][:20] + '...' if len(user['email']) > 20 else user['email']
-            report += f"\n| {email} | {user['plan']} | {date} | {user['monthly_generations']} | {user['total_generations']} |"
+        report = f"""# 📊 **ADMIN DASHBOARD**\n\n## 👥 **User Statistics**\n- **Total Users:** {total_users}\n- **New Today:** {today_signups}\n- **Active (30 days):** {active_users}\n\n## 💎 **Users by Plan**"""
+        for plan in plan_stats: report += f"\n- **{plan['plan'].upper()}:** {plan['count']} users"
+        report += f"""\n\n## 🎨 **Generation Statistics**\n- **Total All-Time:** {gen_stats['total_gens']} generations\n- **Used This Month:** {gen_stats['monthly_gens']} generations\n- **Average per User:** {gen_stats['total_gens'] // max(total_users, 1)} generations\n\n## 🆕 **Recent Users (Latest 15)**\n| Email | Plan | Joined | Monthly | Total |\n|-------|------|--------|---------|-------|"""
+        for user in recent_users: date = user['created_at'].strftime('%m/%d') if user['created_at'] else 'N/A'; email = user['email'][:20] + '...' if len(user['email']) > 20 else user['email']; report += f"\n| {email} | {user['plan']} | {date} | {user['monthly_generations']} | {user['total_generations']} |"
         report += f"\n\n---\n*Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}*"
         return report
-    except Exception as e:
-        return f"❌ Error loading stats: {str(e)}\n\nMake sure your database tables are created."
+    except Exception as e: return f"❌ Error loading stats: {str(e)}\n\nMake sure your database tables are created."
 
 def export_user_data() -> tuple:
-    """Export all user data as CSV format"""
     try:
         conn = get_db_connection()
-        if not conn:
-            return None, "❌ Database not available"
+        if not conn: return None, "❌ Database not available"
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute("SELECT email, plan, monthly_generations, total_generations, created_at, is_active FROM users ORDER BY created_at DESC")
         users = cursor.fetchall()
         conn.close()
-        if not users:
-            return None, "No users found"
+        if not users: return None, "No users found"
         csv_data = "Email,Plan,Monthly Usage,Total Usage,Joined Date,Status\n"
-        for user in users:
-            date = user['created_at'].strftime('%Y-%m-%d %H:%M') if user['created_at'] else 'N/A'
-            status = "Active" if user['is_active'] else "Inactive"
-            csv_data += f"{user['email']},{user['plan']},{user['monthly_generations']},{user['total_generations']},{date},{status}\n"
+        for user in users: date = user['created_at'].strftime('%Y-%m-%d %H:%M') if user['created_at'] else 'N/A'; status = "Active" if user['is_active'] else "Inactive"; csv_data += f"{user['email']},{user['plan']},{user['monthly_generations']},{user['total_generations']},{date},{status}\n"
         temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv')
         temp_file.write(csv_data)
         temp_file.close()
         return temp_file.name, f"✅ Exported {len(users)} users to CSV"
-    except Exception as e:
-        return None, f"❌ Export error: {str(e)}"
+    except Exception as e: return None, f"❌ Export error: {str(e)}"
 
 # ============================================
 # FONTS & CONFIG
@@ -583,13 +477,14 @@ def render_social_post(size_key, bg_color, template_path, bg_type, social_layers
         if bg_type == "Template" and template_path:
             try:
                 img = Image.open(template_path).convert('RGBA')
-                # Resize template to fit the selected post size (e.g., crop or stretch)
+                # Resize template to fit (maintaining aspect ratio, cropping)
                 # Simple resize (stretch) for now:
                 img = img.resize((width, height), Image.Resampling.LANCZOS)
                 print(f"Loaded template: {template_path}")
             except Exception as e:
                 print(f"Error loading template '{template_path}': {e}, defaulting to white.")
-                img = Image.new('RGBA', (width, height), "#FFFFFF")
+                if not isinstance(bg_color, str) or not bg_color.startswith('#'): bg_color = "#FFFFFF"
+                img = Image.new('RGBA', (width, height), bg_color)
         else:
             print(f"Rendering social post with bg_color: {bg_color}, type: {type(bg_color)}")
             if not isinstance(bg_color, str) or not bg_color.startswith('#'):
@@ -731,14 +626,12 @@ def format_layers(layers: List[TextLayer]): # For Tab 2
         lines.append(f"{status} Layer {l.id}: {txt} ({l.effect_type})")
     return "\n".join(lines)
 
-# --- CORRECTED format_social_layers function ---
 def format_social_layers(social_layers: List[SocialLayer]) -> str:
     """Format social post layers list for display"""
     if not social_layers:
         return "No elements added yet"
     lines = []
     for layer in social_layers:
-        # --- CORRECTED INDENTATION ---
         status = "👁️" if layer.visible else "🚫"
         layer_type = layer.type.capitalize()
         desc = ""
@@ -763,7 +656,141 @@ def create_interface():
         user_state = gr.State(None)
 
         # --- UPDATED INTRO HTML ---
-        gr.HTML(""" ... Intro HTML and CSS ... """) # Minified
+        gr.HTML("""
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&family=Noto+Sans+Sinhala:wght@400;700;800&display=swap" rel="stylesheet">
+        <style>
+            .hero-container {
+                padding: 60px 30px;
+                background: linear-gradient(120deg, #5f72bd 0%, #a4508b 100%); /* New gradient */
+                border-radius: 25px; /* Softer radius */
+                margin-bottom: 40px;
+                text-align: center;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                font-family: 'Poppins', sans-serif;
+                overflow: hidden; /* Prevent potential overflows */
+                position: relative; /* For pseudo-elements if needed later */
+            }
+            .hero-title {
+                font-size: 60px; /* Slightly larger */
+                font-weight: 800; /* Extra bold */
+                color: white;
+                margin-bottom: 15px;
+                text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+                letter-spacing: 0.5px;
+            }
+            .hero-subtitle {
+                font-size: 20px;
+                font-weight: 300;
+                color: #e0e7ff;
+                margin-bottom: 45px;
+                letter-spacing: 3px;
+                text-transform: uppercase; /* Uppercase for style */
+                opacity: 0.85;
+            }
+            .content-wrapper {
+                max-width: 900px; /* Slightly narrower */
+                margin: 0 auto 40px auto;
+                background: rgba(255, 255, 255, 1); /* Fully opaque */
+                border-radius: 20px;
+                padding: 40px 50px;
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            }
+            .lang-box {
+                padding: 30px;
+                border-radius: 15px;
+                margin-bottom: 25px;
+                border-left: 5px solid;
+                text-align: left;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            .lang-box:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            }
+            .lang-box h3 {
+                font-size: 26px;
+                font-weight: 700;
+                margin: 0 0 15px 0;
+                font-family: 'Noto Sans Sinhala', 'Poppins', sans-serif;
+            }
+            .lang-box p {
+                font-size: 17px;
+                line-height: 1.7;
+                margin: 0;
+                font-family: 'Noto Sans Sinhala', 'Poppins', sans-serif;
+            }
+            .sinhala-box {
+                background: #fff9e6; /* Soft yellow */
+                border-color: #764ba2;
+                color: #444;
+            }
+            .sinhala-box h3 { color: #5a3e75; }
+
+            .english-box {
+                background: #eef2ff; /* Soft blue */
+                border-color: #ffc872; /* Match Sinhala border accent */
+                color: #444;
+                margin-bottom: 0;
+            }
+             .english-box h3 { color: #506aac; }
+
+            .features-grid {
+                display: flex; /* Use flexbox */
+                flex-wrap: wrap; /* Allow wrapping */
+                justify-content: center; /* Center items */
+                gap: 15px; /* Space between tags */
+                margin-top: 30px; /* Space above tags */
+            }
+            .feature-pill {
+                background: rgba(255, 255, 255, 0.15);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: white;
+                padding: 12px 25px;
+                border-radius: 50px; /* Pill shape */
+                font-size: 15px;
+                font-weight: 500; /* Medium weight */
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                transition: all 0.25s ease-out;
+                cursor: default; /* Indicate non-clickable */
+            }
+            .feature-pill:hover {
+                background: rgba(255, 255, 255, 0.25);
+                transform: translateY(-3px) scale(1.03);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            }
+        </style>
+
+        <div class="hero-container">
+            <h1 class="hero-title">🌟 AkuruAI – අකුරුAI 🌟</h1>
+            <p class="hero-subtitle">Powered by Lanka AI Nexus</p>
+
+            <div class="content-wrapper">
+                <div class="lang-box sinhala-box">
+                    <h3>🇱🇰 සිංහල</h3>
+                    <p>
+                        <strong>AkuruAI (අකුරුAI)</strong> යනු ශ්‍රී ලංකාවේ ප්‍රථම සිංහල AI නිර්මාණාත්මක මෙවලමයි.
+                        මෙය භාවිතයෙන් ඔබට AI පින්තූර නිර්මාණය කර, ඒවාට සිංහල අකුරු යොදා, සජୀවීකරණ ප්‍රයෝග එක් කළ හැකිය.
+                    </p>
+                </div>
+                <div class="lang-box english-box">
+                    <h3>🌍 English</h3>
+                    <p>
+                        <strong>AkuruAI</strong> is Sri Lanka's first Sinhala AI creative tool that brings artificial intelligence, language, and art together.
+                        With AkuruAI, you can instantly create stunning AI-generated images, add Sinhala text, and animate them with smart effects — all in one place.
+                    </p>
+                </div>
+            </div>
+
+            <div class="features-grid">
+                <span class="feature-pill">✨ AI Image Generation</span>
+                <span class="feature-pill">✍️ Sinhala Typography</span>
+                <span class="feature-pill">🎨 Smart Effects</span>
+                <span class="feature-pill">🆓 Free to Start</span>
+            </div>
+        </div>
+        """)
+        # --- END INTRO HTML ---
 
         with gr.Row():
             login_status = gr.Markdown("**Status:** Not logged in", elem_id="login_status_md")
@@ -951,15 +978,6 @@ def create_interface():
                 with gr.Tab("📢 Social Post Creator"):
                     gr.Markdown("## 🖼️ Create Simple Social Media Posts")
                     
-                    # --- NEW: Define post_sizes dictionary *inside* create_interface ---
-                    post_sizes = {
-                        "Instagram Square (1:1)": (1080, 1080),
-                        "Instagram Story (9:16)": (1080, 1920),
-                        "Facebook Post (1.91:1)": (1200, 630),
-                        "Twitter Post (16:9)": (1600, 900)
-                    }
-
-                    # State variables
                     social_post_base_image = gr.State(None)
                     social_layers_state = gr.State([])
                     social_next_layer_id = gr.State(1)
@@ -973,12 +991,17 @@ def create_interface():
                             gr.Markdown("### 1. Setup")
                             post_size_dd = gr.Dropdown(list(post_sizes.keys()), label="Select Post Size", value="Instagram Square (1:1)")
                             
-                            # --- NEW: Template/Color Selection ---
                             bg_type_radio = gr.Radio(["Solid Color", "Template"], label="Background Type", value="Solid Color")
-                            bg_color_picker = gr.ColorPicker(value="#FFFFFF", label="Background Color", interactive=True, elem_id="social_bg_color_picker", visible=True) # Visible by default
-                            template_gallery = gr.Gallery(value=template_files, label="Select a Template", visible=False, columns=5, height=120, allow_preview=False) # Hidden by default
                             
-                            create_canvas_btn = gr.Button("Set Background & Size", variant="secondary")
+                            # Solid Color controls (visible by default)
+                            with gr.Column(visible=True) as solid_color_controls:
+                                bg_color_picker = gr.ColorPicker(value="#FFFFFF", label="Background Color", interactive=True, elem_id="social_bg_color_picker")
+                                create_canvas_btn = gr.Button("Set Background & Size", variant="secondary")
+
+                            # Template controls (hidden by default)
+                            with gr.Column(visible=False) as template_controls:
+                                template_gallery = gr.Gallery(value=template_files, label="Select a Template", columns=5, height=120, allow_preview=False)
+                                gr.Markdown("*(Click a template to set it as the background)*")
                             
                             gr.Markdown("### 2. Add Elements")
                             gr.Markdown("#### Text")
@@ -1019,8 +1042,8 @@ def create_interface():
                                 social_download_status = gr.Textbox(label="Status", interactive=False)
                     
                     # --- Event Handlers for Social Post Tab ---
-
-                    # --- NEW: Handler for background type radio ---
+                    
+                    # Toggle visibility of background controls
                     def toggle_background_type(bg_type):
                         if bg_type == "Solid Color":
                             return gr.update(visible=True), gr.update(visible=False)
@@ -1029,10 +1052,10 @@ def create_interface():
                     bg_type_radio.change(
                         fn=toggle_background_type,
                         inputs=[bg_type_radio],
-                        outputs=[bg_color_picker, template_gallery]
+                        outputs=[solid_color_controls, template_controls]
                     )
 
-                    # --- NEW: Handler to store template selection ---
+                    # Store selected template path
                     def select_template(evt: gr.SelectData):
                         print(f"Template selected: {evt.value}")
                         return evt.value # Return the selected image path
@@ -1042,42 +1065,45 @@ def create_interface():
                         outputs=[template_selection_state]
                     )
 
-                    # 1. Create Base Canvas
-                    def create_base_canvas(size_key, bg_type, bg_color, template_path):
+                    # 1. Create Base Canvas (from Color)
+                    def create_base_canvas_color(size_key, bg_color):
                         try:
                             width, height = post_sizes[size_key]
-                            img = None
-                            if bg_type == "Template" and template_path:
-                                try:
-                                    img = Image.open(template_path).convert('RGBA')
-                                    # Resize template to fit (maintaining aspect ratio, cropping)
-                                    img.thumbnail((width, height) if width > height else (height, width), Image.Resampling.LANCZOS)
-                                    # Create a new image with the bg_color (in case template is smaller)
-                                    base_img = Image.new('RGB', (width, height), bg_color)
-                                    # Paste centered
-                                    paste_x = (width - img.width) // 2
-                                    paste_y = (height - img.height) // 2
-                                    base_img.paste(img, (paste_x, paste_y), img if img.mode == 'RGBA' else None)
-                                    img = base_img
-                                    print(f"Created canvas from template: {template_path}")
-                                except Exception as e:
-                                    print(f"Error loading template '{template_path}': {e}, defaulting to color.")
-                                    if not isinstance(bg_color, str) or not bg_color.startswith('#'): bg_color = "#FFFFFF"
-                                    img = Image.new('RGB', (width, height), bg_color)
-                            else: # Solid Color
-                                if not isinstance(bg_color, str) or not bg_color.startswith('#'): bg_color = "#FFFFFF"
-                                img = Image.new('RGB', (width, height), bg_color)
-                                print(f"Created base canvas: {width}x{height}, {bg_color}")
-                            
-                            # Clear previous layers when creating a new canvas
+                            if not isinstance(bg_color, str) or not bg_color.startswith('#'): bg_color = "#FFFFFF"
+                            img = Image.new('RGB', (width, height), bg_color)
+                            print(f"Created base canvas: {width}x{height}, {bg_color}")
                             return img, img, [], 1, [], "Canvas set. Add elements.", "No elements added yet"
                         except Exception as e:
                             print(f"Error creating canvas: {e}")
                             return None, None, [], 1, [], f"Error: {e}", "Error"
-                    
                     create_canvas_btn.click(
-                        fn=create_base_canvas,
-                        inputs=[post_size_dd, bg_type_radio, bg_color_picker, template_selection_state],
+                        fn=create_base_canvas_color,
+                        inputs=[post_size_dd, bg_color_picker],
+                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, social_history, post_status_text, social_layers_list]
+                    )
+                    
+                    # 1b. Create Base Canvas (from Template)
+                    def create_base_canvas_template(size_key, template_path, evt: gr.SelectData):
+                        template_path = evt.value # Get selected image path
+                        if not template_path:
+                            return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), "No template selected.", gr.update()
+                        
+                        width, height = post_sizes[size_key]
+                        try:
+                            img = Image.open(template_path).convert('RGBA')
+                            img = img.resize((width, height), Image.Resampling.LANCZOS) # Stretch/resize
+                            print(f"Created canvas from template: {template_path}")
+                            # Convert to RGB for base image
+                            base_img = Image.new("RGB", img.size, (255, 255, 255))
+                            base_img.paste(img, mask=img.split()[3] if img.mode == 'RGBA' else None)
+                            
+                            return base_img, base_img, [], 1, [], "Template set. Add elements.", "No elements added yet"
+                        except Exception as e:
+                            print(f"Error loading template '{template_path}': {e}")
+                            return None, None, [], 1, [], f"Error: {e}", "Error"
+                    template_gallery.select(
+                        fn=create_base_canvas_template,
+                        inputs=[post_size_dd, template_selection_state], # Pass size and selected template
                         outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, social_history, post_status_text, social_layers_list]
                     )
 
@@ -1148,9 +1174,11 @@ def create_interface():
                     
                     # 8. Update preview function (triggered by .change() below)
                     def update_preview_and_layer_list(base_img, layers, size_key, bg_color, template_path, bg_type): # Added template path and type
+                        # This function now renders based on the selected *base_img* state
                         if base_img is None:
                             try:
                                 width, height = post_sizes[size_key]
+                                # Create a default base if none is set
                                 if bg_type == "Template" and template_path:
                                     base_img = Image.open(template_path).convert('RGBA')
                                     base_img = base_img.resize((width, height), Image.Resampling.LANCZOS)
@@ -1164,8 +1192,9 @@ def create_interface():
                                 draw.text((10,10), "Set Base First", fill="white")
                                 return error_img, format_social_layers(layers)
                         
-                        # Use the *base_img* from state, not re-rendered from size/color
-                        rendered_image = render_social_post(size_key, bg_color, template_path, bg_type, layers) # Pass all info to renderer
+                        # Render layers onto a *copy* of the base_img state
+                        # We pass the original bg_color/template_path/bg_type in case render_social_post needs them
+                        rendered_image = render_social_post(size_key, bg_color, template_path, bg_type, layers)
                         layer_text = format_social_layers(layers)
                         return rendered_image, layer_text
                     
