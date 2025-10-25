@@ -1414,19 +1414,18 @@ def create_interface():
              - 🆓 මාසිකව නොමිලේ AI උත්පාදන 5ක් (5 FREE AI generations per month)
              - 📤 අසීමිත උඩුගත කිරීම් (නොමිලේ!) (Unlimited uploads FREE!)
              - ✍️ අසීමිත පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
-             - 🎨 උසස් පෙළ ප්‍රයෝග: නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
+             - 🎨 නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
              - 🔄 මාසිකව ස්වයංක්‍රීයව යළි පිහිටුවේ (Auto-resets monthly)
              """)
 
         # --- FOOTER SECTION ---
         gr.Markdown("---") # Add a separator line
         with gr.Row(elem_id="footer"):
-            with gr.Column(scale=1, min_width=160): # Column for Logo, added min_width
+            with gr.Column(scale=1, min_width=160): # Column for Logo
                 gr.Image(
-                    value="logo.jpg", # Assumes logo.jpg is in the main directory
+                    value="logo.JPG", # <--- CORRECTED FILENAME HERE
                     show_label=False,
-                    height=50, # Adjust height as needed
-                    # width=150, # Let width adjust automatically or set explicitly
+                    height=50,
                     container=False,
                     show_download_button=False
                 )
