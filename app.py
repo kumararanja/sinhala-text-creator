@@ -121,7 +121,6 @@ def get_db_connection():
 # ============================================
 # USER MANAGEMENT FUNCTIONS
 # ============================================
-# ... (User management functions remain the same) ...
 def hash_password(password: str) -> str:
     """Hash password using SHA-256"""
     return hashlib.sha256(password.encode()).hexdigest()
@@ -329,266 +328,77 @@ def get_user_stats(user_id: int) -> str:
 # ADMIN DASHBOARD FUNCTIONS
 # ============================================
 # ... (Admin functions remain the same) ...
-# 🔐 CHANGE THIS PASSWORD TO YOUR OWN SECRET PASSWORD!
-ADMIN_PASSWORD = "YourAdminPass2024"  # <-- CHANGE THIS TO YOUR SECRET PASSWORD!
-
-def check_admin_password(password: str) -> bool:
-    """Check if admin password is correct"""
-    return password == ADMIN_PASSWORD
-
+ADMIN_PASSWORD = "YourAdminPass2024"
+def check_admin_password(password: str) -> bool: return password == ADMIN_PASSWORD
 def get_admin_stats() -> str:
-    """Get complete admin statistics"""
     try:
-        conn = get_db_connection()
-        if not conn:
-            return "❌ Database not available"
-
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Get total users
-        cursor.execute("SELECT COUNT(*) as total FROM users")
-        total_users = cursor.fetchone()['total']
-
-        # Get users by plan
-        cursor.execute("""
-            SELECT plan, COUNT(*) as count
-            FROM users
-            GROUP BY plan
-            ORDER BY plan
-        """)
-        plan_stats = cursor.fetchall()
-
-        # Get active users (logged in last 30 days)
-        cursor.execute("""
-            SELECT COUNT(*) as active
-            FROM users
-            WHERE created_at > NOW() - INTERVAL '30 days'
-        """)
-        active_users = cursor.fetchone()['active']
-
-        # Get total generations
-        cursor.execute("""
-            SELECT
-                COALESCE(SUM(total_generations), 0) as total_gens,
-                COALESCE(SUM(monthly_generations), 0) as monthly_gens
-            FROM users
-        """)
-        gen_stats = cursor.fetchone()
-
-        # Get recent users
-        cursor.execute("""
-            SELECT email, plan, created_at, total_generations, monthly_generations
-            FROM users
-            ORDER BY created_at DESC
-            LIMIT 15
-        """)
-        recent_users = cursor.fetchall()
-
-        # Get today's signups
-        cursor.execute("""
-            SELECT COUNT(*) as today_count
-            FROM users
-            WHERE DATE(created_at) = CURRENT_DATE
-        """)
-        today_signups = cursor.fetchone()['today_count']
-
-        conn.close()
-
-        # Format the report
-        report = f"""# 📊 **ADMIN DASHBOARD**
-
-## 👥 **User Statistics**
-- **Total Users:** {total_users}
-- **New Today:** {today_signups}
-- **Active (30 days):** {active_users}
-
-## 💎 **Users by Plan**"""
-
-        for plan in plan_stats:
-            report += f"\n- **{plan['plan'].upper()}:** {plan['count']} users"
-
-        report += f"""
-
-## 🎨 **Generation Statistics**
-- **Total All-Time:** {gen_stats['total_gens']} generations
-- **Used This Month:** {gen_stats['monthly_gens']} generations
-- **Average per User:** {gen_stats['total_gens'] // max(total_users, 1)} generations
-
-## 🆕 **Recent Users (Latest 15)**
-| Email | Plan | Joined | Monthly | Total |
-|-------|------|--------|---------|-------|"""
-
-        for user in recent_users:
-            date = user['created_at'].strftime('%m/%d') if user['created_at'] else 'N/A'
-            email = user['email'][:20] + '...' if len(user['email']) > 20 else user['email']
-            report += f"\n| {email} | {user['plan']} | {date} | {user['monthly_generations']} | {user['total_generations']} |"
-
-        report += f"\n\n---\n*Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}*"
-
-        return report
-
-    except Exception as e:
-        return f"❌ Error loading stats: {str(e)}\n\nMake sure your database tables are created."
-
+        conn = get_db_connection();
+        if not conn: return "❌ Database not available";
+        cursor = conn.cursor(cursor_factory=RealDictCursor);
+        cursor.execute("SELECT COUNT(*) as total FROM users"); total_users = cursor.fetchone()['total'];
+        cursor.execute("SELECT plan, COUNT(*) as count FROM users GROUP BY plan ORDER BY plan"); plan_stats = cursor.fetchall();
+        cursor.execute("SELECT COUNT(*) as active FROM users WHERE created_at > NOW() - INTERVAL '30 days'"); active_users = cursor.fetchone()['active'];
+        cursor.execute("SELECT COALESCE(SUM(total_generations), 0) as total_gens, COALESCE(SUM(monthly_generations), 0) as monthly_gens FROM users"); gen_stats = cursor.fetchone();
+        cursor.execute("SELECT email, plan, created_at, total_generations, monthly_generations FROM users ORDER BY created_at DESC LIMIT 15"); recent_users = cursor.fetchall();
+        cursor.execute("SELECT COUNT(*) as today_count FROM users WHERE DATE(created_at) = CURRENT_DATE"); today_signups = cursor.fetchone()['today_count'];
+        conn.close();
+        report = f"# 📊 **ADMIN DASHBOARD**\n\n## 👥 **User Statistics**\n- **Total Users:** {total_users}\n- **New Today:** {today_signups}\n- **Active (30 days):** {active_users}\n\n## 💎 **Users by Plan**";
+        for plan in plan_stats: report += f"\n- **{plan['plan'].upper()}:** {plan['count']} users";
+        report += f"\n\n## 🎨 **Generation Statistics**\n- **Total All-Time:** {gen_stats['total_gens']} generations\n- **Used This Month:** {gen_stats['monthly_gens']} generations\n- **Average per User:** {gen_stats['total_gens'] // max(total_users, 1)} generations\n\n## 🆕 **Recent Users (Latest 15)**\n| Email | Plan | Joined | Monthly | Total |\n|-------|------|--------|---------|-------|";
+        for user in recent_users: date = user['created_at'].strftime('%m/%d') if user['created_at'] else 'N/A'; email = user['email'][:20] + '...' if len(user['email']) > 20 else user['email']; report += f"\n| {email} | {user['plan']} | {date} | {user['monthly_generations']} | {user['total_generations']} |";
+        report += f"\n\n---\n*Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}*";
+        return report;
+    except Exception as e: return f"❌ Error loading stats: {str(e)}\n\nMake sure your database tables are created.";
 def export_user_data() -> tuple:
-    """Export all user data as CSV format"""
     try:
-        conn = get_db_connection()
-        if not conn:
-            return None, "❌ Database not available"
+        conn = get_db_connection();
+        if not conn: return None, "❌ Database not available";
+        cursor = conn.cursor(cursor_factory=RealDictCursor);
+        cursor.execute("SELECT email, plan, monthly_generations, total_generations, created_at, is_active FROM users ORDER BY created_at DESC");
+        users = cursor.fetchall(); conn.close();
+        if not users: return None, "No users found";
+        csv_data = "Email,Plan,Monthly Usage,Total Usage,Joined Date,Status\n";
+        for user in users: date = user['created_at'].strftime('%Y-%m-%d %H:%M') if user['created_at'] else 'N/A'; status = "Active" if user['is_active'] else "Inactive"; csv_data += f"{user['email']},{user['plan']},{user['monthly_generations']},{user['total_generations']},{date},{status}\n";
+        temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv'); temp_file.write(csv_data); temp_file.close();
+        return temp_file.name, f"✅ Exported {len(users)} users to CSV";
+    except Exception as e: return None, f"❌ Export error: {str(e)}";
 
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-        cursor.execute("""
-            SELECT
-                email,
-                plan,
-                monthly_generations,
-                total_generations,
-                created_at,
-                is_active
-            FROM users
-            ORDER BY created_at DESC
-        """)
-
-        users = cursor.fetchall()
-        conn.close()
-
-        if not users:
-            return None, "No users found"
-
-        # Create CSV format
-        csv_data = "Email,Plan,Monthly Usage,Total Usage,Joined Date,Status\n"
-        for user in users:
-            date = user['created_at'].strftime('%Y-%m-%d %H:%M') if user['created_at'] else 'N/A'
-            status = "Active" if user['is_active'] else "Inactive"
-            csv_data += f"{user['email']},{user['plan']},{user['monthly_generations']},{user['total_generations']},{date},{status}\n"
-
-        # Save to temporary file
-        temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv')
-        temp_file.write(csv_data)
-        temp_file.close()
-
-        return temp_file.name, f"✅ Exported {len(users)} users to CSV"
-
-    except Exception as e:
-        return None, f"❌ Export error: {str(e)}"
 
 # ============================================
 # FONTS & CONFIG
 # ============================================
-
+# ... (FONT_PATHS, fonts_available loading, REPLICATE, IMAGE_SIZES, PRESETS remain the same) ...
 FONT_PATHS = {
-    # --- Sinhala Fonts ---
-    "Abhaya Regular (Sinhala)": "fonts/AbhayaLibre-Regular.ttf",
-    "Abhaya Bold (Sinhala)": "fonts/AbhayaLibre-Bold.ttf",
-    "Abhaya Medium (Sinhala)": "fonts/AbhayaLibre-Medium.ttf",
-    "Noto Sans (Sinhala)": "fonts/NotoSansSinhala_Condensed-Regular.ttf",
-
-    # --- English / General Fonts ---
-    "Montserrat Bold": "fonts/Montserrat-Bold.ttf",
-    "Montserrat Regular": "fonts/Montserrat-Regular.ttf",
-    "Montserrat Italic": "fonts/Montserrat-Italic.ttf",
-    "Anton": "fonts/Anton-Regular.ttf",
-    "Bebas Neue": "fonts/BebasNeue-Regular.ttf",
-    "Oswald Bold": "fonts/Oswald-Bold.ttf",
-    "Oswald Regular": "fonts/Oswald-Regular.ttf",
-
-    # --- Tamil Fonts ---
-    "Hind Madurai Bold (Tamil)": "fonts/HindMadurai-Bold.ttf",
-    "Hind Madurai Regular (Tamil)": "fonts/HindMadurai-Regular.ttf",
-    "Catamaran (Tamil)": "fonts/Catamaran-Tamil.ttf"
+    "Abhaya Regular (Sinhala)": "fonts/AbhayaLibre-Regular.ttf", "Abhaya Bold (Sinhala)": "fonts/AbhayaLibre-Bold.ttf", "Abhaya Medium (Sinhala)": "fonts/AbhayaLibre-Medium.ttf",
+    "Noto Sans (Sinhala)": "fonts/NotoSansSinhala_Condensed-Regular.ttf", "Montserrat Bold": "fonts/Montserrat-Bold.ttf", "Montserrat Regular": "fonts/Montserrat-Regular.ttf",
+    "Montserrat Italic": "fonts/Montserrat-Italic.ttf", "Anton": "fonts/Anton-Regular.ttf", "Bebas Neue": "fonts/BebasNeue-Regular.ttf",
+    "Oswald Bold": "fonts/Oswald-Bold.ttf", "Oswald Regular": "fonts/Oswald-Regular.ttf", "Hind Madurai Bold (Tamil)": "fonts/HindMadurai-Bold.ttf",
+    "Hind Madurai Regular (Tamil)": "fonts/HindMadurai-Regular.ttf", "Catamaran (Tamil)": "fonts/Catamaran-Tamil.ttf"
 }
-
-fonts_available = {}
-print("--- Loading Fonts ---") # Add a marker
+fonts_available = {}; print("--- Loading Fonts ---");
 for name, path in FONT_PATHS.items():
     try:
-        print(f"Attempting to load: {name} from {path}") # Print attempt
-        # Ensure path exists before trying to load
-        if not os.path.exists(path):
-             print(f"  ❌ FAILED: Font file not found at '{path}'")
-             continue # Skip to next font if file doesn't exist
-
-        ImageFont.truetype(path, 20)
-        fonts_available[name] = path
-        print(f"  ✅ SUCCESS: Loaded {name}") # Print success
-    except Exception as e:
-         # Print ANY error that occurs during font loading
-         print(f"  ❌ FAILED to load font '{name}' from path '{path}': {e}")
-print("--- Finished Loading Fonts ---") # Add another marker
-
-
-if not fonts_available:
-    print("⚠️ WARNING: No fonts loaded successfully. Using system fallback.")
-    fonts_available["Fallback"] = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" # Keep a fallback
-
-# Replicate setup
-try:
-    import replicate
-    REPLICATE_AVAILABLE = True
-except:
-    REPLICATE_AVAILABLE = False
-
-REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN", "")
-
-IMAGE_SIZES = {
-    "Instagram Post (1:1)": (1080, 1080),
-    "Instagram Story (9:16)": (1080, 1920),
-    "YouTube Thumbnail (16:9)": (1280, 720),
-}
-
-# Enhanced presets with more effects
+        print(f"Attempting to load: {name} from {path}");
+        if not os.path.exists(path): print(f"  ❌ FAILED: Font file not found at '{path}'"); continue;
+        ImageFont.truetype(path, 20); fonts_available[name] = path; print(f"  ✅ SUCCESS: Loaded {name}");
+    except Exception as e: print(f"  ❌ FAILED to load font '{name}' from path '{path}': {e}");
+print("--- Finished Loading Fonts ---");
+if not fonts_available: print("⚠️ WARNING: No fonts loaded successfully. Using system fallback."); fonts_available["Fallback"] = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
+try: import replicate; REPLICATE_AVAILABLE = True;
+except: REPLICATE_AVAILABLE = False;
+REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN", "");
+IMAGE_SIZES = { "Instagram Post (1:1)": (1080, 1080), "Instagram Story (9:16)": (1080, 1920), "YouTube Thumbnail (16:9)": (1280, 720) };
 PRESETS = {
-    "Bold & Readable": {
-        "text_color": "#FFFFFF", "outline_color": "#000000",
-        "outline_width": 10, "shadow_blur": 5,
-        "add_shadow": True, "add_glow": False,
-        "effect_type": "normal"
-    },
-    "Neon Glow 🌟": {
-        "text_color": "#00FFFF", "outline_color": "#FF00FF",
-        "outline_width": 3, "shadow_blur": 20,
-        "add_shadow": False, "add_glow": True,
-        "effect_type": "neon"
-    },
-    "Chrome Metal ⚙️": {
-        "text_color": "#C0C0C0", "outline_color": "#808080",
-        "outline_width": 4, "shadow_blur": 8,
-        "add_shadow": True, "add_glow": False,
-        "effect_type": "chrome"
-    },
-    "Fire Text 🔥": {
-        "text_color": "#FF4500", "outline_color": "#FFD700",
-        "outline_width": 5, "shadow_blur": 15,
-        "add_shadow": True, "add_glow": True,
-        "effect_type": "fire"
-    },
-    "Ice Frozen ❄️": {
-        "text_color": "#B0E0E6", "outline_color": "#4682B4",
-        "outline_width": 6, "shadow_blur": 10,
-        "add_shadow": True, "add_glow": True,
-        "effect_type": "normal"
-    },
-    "3D Shadow": {
-        "text_color": "#FFFFFF", "outline_color": "#000000",
-        "outline_width": 2, "shadow_blur": 0,
-        "add_shadow": True, "add_glow": False,
-        "effect_type": "3d"
-    },
-    "Gradient Rainbow 🌈": {
-        "text_color": "#FF1493", "outline_color": "#8A2BE2",
-        "outline_width": 3, "shadow_blur": 5,
-        "add_shadow": False, "add_glow": False,
-        "effect_type": "gradient"
-    },
-    "Gold Luxury 👑": {
-        "text_color": "#FFD700", "outline_color": "#B8860B",
-        "outline_width": 8, "shadow_blur": 10,
-        "add_shadow": True, "add_glow": False,
-        "effect_type": "normal"
-    }
+    "Bold & Readable": {"text_color": "#FFFFFF", "outline_color": "#000000", "outline_width": 10, "shadow_blur": 5, "add_shadow": True, "add_glow": False, "effect_type": "normal"},
+    "Neon Glow 🌟": {"text_color": "#00FFFF", "outline_color": "#FF00FF", "outline_width": 3, "shadow_blur": 20, "add_shadow": False, "add_glow": True, "effect_type": "neon"},
+    "Chrome Metal ⚙️": {"text_color": "#C0C0C0", "outline_color": "#808080", "outline_width": 4, "shadow_blur": 8, "add_shadow": True, "add_glow": False, "effect_type": "chrome"},
+    "Fire Text 🔥": {"text_color": "#FF4500", "outline_color": "#FFD700", "outline_width": 5, "shadow_blur": 15, "add_shadow": True, "add_glow": True, "effect_type": "fire"},
+    "Ice Frozen ❄️": {"text_color": "#B0E0E6", "outline_color": "#4682B4", "outline_width": 6, "shadow_blur": 10, "add_shadow": True, "add_glow": True, "effect_type": "normal"},
+    "3D Shadow": {"text_color": "#FFFFFF", "outline_color": "#000000", "outline_width": 2, "shadow_blur": 0, "add_shadow": True, "add_glow": False, "effect_type": "3d"},
+    "Gradient Rainbow 🌈": {"text_color": "#FF1493", "outline_color": "#8A2BE2", "outline_width": 3, "shadow_blur": 5, "add_shadow": False, "add_glow": False, "effect_type": "gradient"},
+    "Gold Luxury 👑": {"text_color": "#FFD700", "outline_color": "#B8860B", "outline_width": 8, "shadow_blur": 10, "add_shadow": True, "add_glow": False, "effect_type": "normal"}
 }
+
 
 @dataclass
 class TextLayer: # For Tab 2
@@ -624,99 +434,55 @@ def apply_neon_effect(draw, text, font, x, y, base_color, glow_color, intensity=
     """Create neon glow effect"""
     base_rgb = tuple(int(base_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
     glow_rgb = tuple(int(glow_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-
-    # Create multiple glow layers
     for glow_size in range(intensity*5, 0, -1):
         alpha = int(120 * (glow_size / (intensity*5)))
         for angle in range(0, 360, 30):
             gx = int(glow_size * 0.5 * np.cos(np.radians(angle)))
             gy = int(glow_size * 0.5 * np.sin(np.radians(angle)))
             draw.text((x + gx, y + gy), text, font=font, fill=glow_rgb + (alpha,))
-
-    # Draw bright core
     draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))
-    # Draw colored overlay
     draw.text((x, y), text, font=font, fill=base_rgb + (200,))
 
 def apply_chrome_effect(draw, text, font, x, y):
     """Create chrome/metallic effect"""
-    # Create gradient-like chrome effect
     for offset in range(3, -1, -1):
         gray_value = 80 + offset * 40
-        draw.text((x - offset, y - offset), text, font=font,
-                  fill=(gray_value, gray_value, gray_value, 255))
-
-    # Highlight
+        draw.text((x - offset, y - offset), text, font=font, fill=(gray_value, gray_value, gray_value, 255))
     draw.text((x + 1, y + 1), text, font=font, fill=(255, 255, 255, 180))
-    # Main text
     draw.text((x, y), text, font=font, fill=(192, 192, 192, 255))
 
 def apply_fire_effect(draw, text, font, x, y):
     """Create fire effect"""
-    fire_colors = [
-        (255, 255, 0),    # Yellow core
-        (255, 200, 0),    # Orange-yellow
-        (255, 140, 0),    # Orange
-        (255, 69, 0),     # Red-orange
-        (139, 0, 0)       # Dark red
-    ]
-
+    fire_colors = [(255, 255, 0), (255, 200, 0), (255, 140, 0), (255, 69, 0), (139, 0, 0)]
     for i, color in enumerate(fire_colors):
-        offset = i * 2
-        alpha = 255 - (i * 40)
+        offset = i * 2; alpha = 255 - (i * 40);
         draw.text((x, y - offset), text, font=font, fill=color + (alpha,))
-        if i > 0:
-            draw.text((x - 1, y - offset + 1), text, font=font, fill=color + (alpha//2,))
-            draw.text((x + 1, y - offset + 1), text, font=font, fill=color + (alpha//2,))
+        if i > 0: draw.text((x - 1, y - offset + 1), text, font=font, fill=color + (alpha//2,)); draw.text((x + 1, y - offset + 1), text, font=font, fill=color + (alpha//2,));
 
 def apply_3d_shadow_effect(draw, text, font, x, y, text_color, shadow_color, depth=5):
     """Create 3D shadow effect"""
     text_rgb = tuple(int(text_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
     shadow_rgb = tuple(int(shadow_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-
-    # Draw 3D layers
-    for i in range(depth, 0, -1):
-        draw.text((x + i*2, y + i*2), text, font=font, fill=shadow_rgb + (200,))
-
-    # Draw main text
+    for i in range(depth, 0, -1): draw.text((x + i*2, y + i*2), text, font=font, fill=shadow_rgb + (200,))
     draw.text((x, y), text, font=font, fill=text_rgb + (255,))
 
 def apply_gradient_effect(image, draw, text, font, x, y, color1, color2):
     """Create gradient text effect"""
-    bbox = font.getbbox(text)
-    text_width = bbox[2] - bbox[0]
-    text_height = bbox[3] - bbox[1]
-
-    # Create gradient
-    gradient = Image.new('RGBA', (text_width, text_height), (0, 0, 0, 0))
-    grad_draw = ImageDraw.Draw(gradient)
-
-    c1_rgb = tuple(int(color1.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-    c2_rgb = tuple(int(color2.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-
+    bbox = font.getbbox(text); text_width = bbox[2] - bbox[0]; text_height = bbox[3] - bbox[1];
+    gradient = Image.new('RGBA', (text_width, text_height), (0, 0, 0, 0)); grad_draw = ImageDraw.Draw(gradient);
+    c1_rgb = tuple(int(color1.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)); c2_rgb = tuple(int(color2.lstrip('#')[i:i+2], 16) for i in (0, 2, 4));
     for i in range(text_height):
-        ratio = i / text_height
-        r = int(c1_rgb[0] * (1 - ratio) + c2_rgb[0] * ratio)
-        g = int(c1_rgb[1] * (1 - ratio) + c2_rgb[1] * ratio)
-        b = int(c1_rgb[2] * (1 - ratio) + c2_rgb[2] * ratio)
-        grad_draw.rectangle([0, i, text_width, i+1], fill=(r, g, b, 255))
-
-    # Create text mask
-    mask = Image.new('L', (text_width, text_height), 0)
-    mask_draw = ImageDraw.Draw(mask)
-    mask_draw.text((0, 0), text, font=font, fill=255)
-
-    # Apply gradient to text
-    gradient.putalpha(mask)
-    image.paste(gradient, (x, y), gradient)
-
+        ratio = i / text_height; r = int(c1_rgb[0] * (1 - ratio) + c2_rgb[0] * ratio); g = int(c1_rgb[1] * (1 - ratio) + c2_rgb[1] * ratio); b = int(c1_rgb[2] * (1 - ratio) + c2_rgb[2] * ratio);
+        grad_draw.rectangle([0, i, text_width, i+1], fill=(r, g, b, 255));
+    mask = Image.new('L', (text_width, text_height), 0); mask_draw = ImageDraw.Draw(mask); mask_draw.text((0, 0), text, font=font, fill=255);
+    gradient.putalpha(mask); image.paste(gradient, (x, y), gradient);
 
 def render_social_text_simple(draw, text, font, x, y, color, anchor):
     """Basic text drawing for social posts (can be expanded)"""
     draw.text((x, y), text, fill=color, font=font, anchor=anchor)
 
-# Simplified renderer for social post text layers, using effect functions if needed
 def render_social_text_layer(draw, props, image=None):
+    """Simplified renderer for social post text layers, using effect functions if needed"""
     font_path = fonts_available.get(props.get('font_key'), list(fonts_available.values())[0])
     width, _ = image.size # Needed for dynamic font size
     heading_font_size = max(30, int(width / 18))
@@ -729,39 +495,21 @@ def render_social_text_layer(draw, props, image=None):
     is_heading = props.get('is_heading', False)
     effect = props.get('effect_type', 'normal') # Get effect type
     outline_color = props.get('outline_color', '#000000') # Need outline color for some effects
-
-    # --- Positioning Logic ---
-    text_y = 0
-    text_x = 0
-    text_anchor = "la" # Left-Ascent
-
+    text_y = 0; text_x = 0; text_anchor = "la";
     if is_heading:
-        bbox = draw.textbbox((0,0), text, font=font_obj, anchor="lt")
-        text_width = bbox[2] - bbox[0]
-        text_x = (width - text_width) // 2
-        text_y = int(image.height * 0.1) # Use image height
-        text_anchor = "la"
+        bbox = draw.textbbox((0,0), text, font=font_obj, anchor="lt"); text_width = bbox[2] - bbox[0];
+        text_x = (width - text_width) // 2; text_y = int(image.height * 0.1); text_anchor = "la";
     else: # Paragraph
-        # Find bottom of last heading if possible, otherwise guess
-        # This needs better state management or passing previous y pos
-        text_y = int(image.height * 0.25) # Example start
-        text_x = int(width * 0.1)
-        if alignment == "Center": text_anchor = "ma"; text_x = width // 2
-        elif alignment == "Right": text_anchor = "ra"; text_x = int(width * 0.9)
-
-    # Use effect renderers if needed
-    dummy_layer = TextLayer(id=0, text=text, font_style='', font_size=font_size, text_color=color, x=text_x, y=text_y, outline_width=0, outline_color=outline_color, add_shadow=False, shadow_blur=0, add_glow=False, effect_type=effect) # Create dummy layer for compatibility
-
+        text_y = int(image.height * 0.25); text_x = int(width * 0.1);
+        if alignment == "Center": text_anchor = "ma"; text_x = width // 2;
+        elif alignment == "Right": text_anchor = "ra"; text_x = int(width * 0.9);
     # Check if effect function exists and call it
     if effect == "neon": apply_neon_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
     elif effect == "chrome": apply_chrome_effect(draw, text, font_obj, text_x, text_y)
     elif effect == "fire": apply_fire_effect(draw, text, font_obj, text_x, text_y)
     elif effect == "3d": apply_3d_shadow_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
     elif effect == "gradient" and image: apply_gradient_effect(image, draw, text, font_obj, text_x, text_y, color, outline_color)
-    else: # Normal text drawing with alignment
-        # TODO: Add text wrapping here
-        draw.text((text_x, text_y), text, fill=color, font=font_obj, anchor=text_anchor)
-
+    else: draw.text((text_x, text_y), text, fill=color, font=font_obj, anchor=text_anchor);
 
 # --- RENDERER FOR TAB 2 ---
 def render_all_layers(base_image, layers: List[TextLayer]): # For Tab 2
@@ -794,11 +542,8 @@ def render_social_post(size_key, bg_color, social_layers: List[SocialLayer]):
              print(f"Warning: Invalid bg_color '{bg_color}', defaulting to white.")
              bg_color = "#FFFFFF" # Fallback
         # --- End Debugging ---
-
-        # Create base image with alpha for potential gradient effects later
         img = Image.new('RGBA', (width, height), bg_color)
         draw = ImageDraw.Draw(img)
-
         # Draw layers in order
         for layer in social_layers:
             if not layer.visible: continue
@@ -821,28 +566,19 @@ def render_social_post(size_key, bg_color, social_layers: List[SocialLayer]):
                     if logo.mode == 'RGBA': img.paste(logo, (paste_x, paste_y), logo)
                     else: img.paste(logo, (paste_x, paste_y))
                 except Exception as e: print(f"Error drawing logo layer {layer.id}: {e}")
-
-        # Convert final image back to RGB before returning to Gradio Image component
-        # Create a white background and paste the RGBA image onto it
+        # Convert final image back to RGB
         final_rgb_img = Image.new("RGB", img.size, (255, 255, 255))
-        # Ensure img is RGBA before splitting alpha
-        if img.mode != 'RGBA':
-            img = img.convert('RGBA')
-        final_rgb_img.paste(img, mask=img.split()[3]) # Use alpha mask for transparency
+        if img.mode != 'RGBA': img = img.convert('RGBA')
+        final_rgb_img.paste(img, mask=img.split()[3]) # Use alpha mask
         return final_rgb_img
-
     except Exception as e:
         print(f"Error rendering social post: {e}")
-        error_img = Image.new('RGB', (300, 100), color = 'grey')
-        draw = ImageDraw.Draw(error_img)
-        draw.text((10, 10), f"Render Error: {e}", fill='white')
-        return error_img
-
+        error_img = Image.new('RGB', (300, 100), color = 'grey'); draw = ImageDraw.Draw(error_img);
+        draw.text((10, 10), f"Render Error: {e}", fill='white'); return error_img;
 
 # ============================================
 # IMAGE GENERATION FUNCTIONS
 # ============================================
-# ... (generate_image_with_auth, process_uploaded_image remain the same) ...
 def generate_image_with_auth(prompt, size_option, user_info, progress=gr.Progress()):
     """Generate AI image with authentication check"""
     # ... (code is correct) ...
@@ -863,7 +599,6 @@ def process_uploaded_image(image):
     max_size = 2048;
     if image.width > max_size or image.height > max_size: ratio = min(max_size / image.width, max_size / image.height); new_size = (int(image.width * ratio), int(image.height * ratio)); image = image.resize(new_size, Image.Resampling.LANCZOS);
     return image, f"✅ Loaded: {image.width}x{image.height}px (FREE - no credits used!)";
-
 
 # --- UPDATED save_image function ---
 def save_image(image_data, format_choice):
@@ -936,7 +671,7 @@ def create_interface():
         user_state = gr.State(None)
 
         # --- UPDATED INTRO HTML ---
-        gr.HTML(""" ... Intro HTML and CSS ... """) # Same as previous version
+        gr.HTML(""" ... Intro HTML and CSS ... """) # (Minified for brevity)
 
         with gr.Row():
             login_status = gr.Markdown("**Status:** Not logged in", elem_id="login_status_md")
@@ -959,8 +694,8 @@ def create_interface():
                     stats_display = gr.Markdown("Loading...")
                     logout_btn = gr.Button("🚪 Logout", size="sm")
 
-            # --- INDENTATION OF THIS BLOCK IS CRITICAL ---
-            with gr.Tabs(): # This should be at the same level as the Accordion
+            # --- CORRECTED INDENTATION: with gr.Tabs() ---
+            with gr.Tabs(): # This line should be at the same level as the Accordion
 
                 # TAB 1 - Get Image
                 with gr.Tab("1️⃣ Get Image"):
@@ -973,7 +708,6 @@ def create_interface():
                 with gr.Tab("2️⃣ Add Text Effects"):
                     # ... (Remains the same) ...
                     gr.Markdown("### 🎨 Advanced Text Effects Studio"); base_image_state = gr.State(None); layers_state = gr.State([]); next_layer_id = gr.State(1); history = gr.State([]);
-                    # ... (Rest of Tab 2 UI and handlers are correct) ...
                     with gr.Row():
                         with gr.Column(): load_btn = gr.Button("🔄 Load Image from Tab 1", variant="primary", size="lg"); preview = gr.Image(label="Click to position text", type="pil", interactive=True); with gr.Row(): x_coord = gr.Number(label="X Position", value=100, precision=0); y_coord = gr.Number(label="Y Position", value=100, precision=0); status = gr.Textbox(label="Status", interactive=False);
                         with gr.Column(): text_input = gr.Textbox( label="✍️ Enter Your Text", lines=2, placeholder="Type your text here..." ); preset = gr.Dropdown( ["Custom"] + list(PRESETS.keys()), value="Neon Glow 🌟", label="✨ Quick Effect Presets" ); with gr.Row(): font = gr.Dropdown( list(fonts_available.keys()), value=list(fonts_available.keys())[0], label="Font Style" ); font_size = gr.Slider(20, 300, 80, label="Font Size", step=5); gr.Markdown("### 🎨 Colors"); with gr.Row(): text_color = gr.ColorPicker( value="#FFFFFF", label="📝 Text Color", interactive=True, elem_id="text_color_picker" ); outline_color = gr.ColorPicker( value="#000000", label="🔲 Outline/Glow Color", interactive=True, elem_id="outline_color_picker" ); with gr.Accordion("⚙️ Advanced Effect Controls", open=True): effect_type = gr.Dropdown( ["normal", "neon", "chrome", "fire", "3d", "gradient"], value="neon", label="Effect Style" ); outline_w = gr.Slider(0, 30, 3, label="Outline Width", step=1); with gr.Row(): add_shadow = gr.Checkbox(label="Add Shadow", value=False); add_glow = gr.Checkbox(label="Add Glow", value=True); shadow_blur = gr.Slider(0, 50, 20, label="Shadow/Glow Blur", step=1); opacity = gr.Slider(0, 100, 100, label="Text Opacity %", step=5); add_btn = gr.Button("➕ ADD TEXT TO IMAGE", variant="primary", size="lg"); layers_list = gr.Textbox( label="📝 Text Layers", lines=5, interactive=False, value="No layers yet" ); with gr.Row(): remove_last_btn = gr.Button("🔙 Remove Last", variant="secondary"); undo_btn = gr.Button("↩️ Undo", variant="secondary"); clear_all_btn = gr.Button("🗑️ Clear All", variant="stop");
@@ -1157,7 +891,7 @@ def create_interface():
         with gr.Row(elem_id="footer"):
             # ... (Footer code remains the same) ...
             with gr.Column(scale=1, min_width=160): gr.Image( value="logo.JPG", show_label=False, height=50, container=False, show_download_button=False );
-            with gr.Column(scale=3): terms_url = "httpswww.google.com"; privacy_url = "httpswww.google.com"; about_url = "https://lankaainexus.com/about-us/"; gr.Markdown(f"""<div style="text-align: right; font-size: 0.9em; color: grey; line-height: 1.6;"> © {datetime.now().year} Lanka AI Nexus (Powered by Doctor On Care Pvt Ltd). All rights reserved. <br> <a href="{about_url}" target="_blank" style="color: grey; text-decoration: none;">About Us</a> | <a href="{terms_url}" target="_blank" style="color: grey; text-decoration: none;">Terms & Conditions</a> | <a href="{privacy_url}" target="_blank" style="color: grey; text-decoration: none;">Privacy Policy</a> </div>""");
+            with gr.Column(scale=3): terms_url = "https://lankaainexus.com/terms-and-conditions"; privacy_url = "https://lankaainexus.com/privacy-policy"; about_url = "https://lankaainexus.com/about-us/"; gr.Markdown(f"""<div style="text-align: right; font-size: 0.9em; color: grey; line-height: 1.6;"> © {datetime.now().year} Lanka AI Nexus (Powered by Doctor On Care Pvt Ltd). All rights reserved. <br> <a href="{about_url}" target="_blank" style="color: grey; text-decoration: none;">About Us</a> | <a href="{terms_url}" target="_blank" style="color: grey; text-decoration: none;">Terms & Conditions</a> | <a href="{privacy_url}" target="_blank" style="color: grey; text-decoration: none;">Privacy Policy</a> </div>""");
 
 
         # EVENT HANDLERS (Login/Register/Logout/Generate/Upload)
