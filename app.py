@@ -850,7 +850,6 @@ def create_interface():
                     
                     # --- Event Handlers for Tab 2 ---
                     load_btn.click( lambda x: (x, "✅ Image loaded! Click on image to position text") if x else (None, "❌ No image in Tab 1"), [img_display], [preview, status] ).then( lambda x: x, [img_display], [base_image_state] )
-                    
                     def handle_click(evt: gr.SelectData):
                         return evt.index[0], evt.index[1], f"📍 Position set: ({evt.index[0]}, {evt.index[1]})"
                     preview.select(handle_click, None, [x_coord, y_coord, status])
@@ -1053,15 +1052,16 @@ def create_interface():
         with gr.Row(elem_id="footer"):
             with gr.Column(scale=1, min_width=160):
                 gr.Image(
-                    value="logo.JPG", # <-- CORRECTED FILENAME CASE
+                    value="logo.JPG",
                     show_label=False,
                     height=50,
                     container=False,
                     show_download_button=False
                 )
             with gr.Column(scale=3):
-                terms_url = "https.www.google.com"; privacy_url = "https.www.google.com" # Dummy URLs
-                about_url = "https://lankaainexus.com/about-us/" # YOUR ABOUT US URL
+                terms_url = "https://lankaainexus.com/terms-and-conditions"
+                privacy_url = "https://lankaainexus.com/privacy-policy"
+                about_url = "https://lankaainexus.com/about-us/"
                 gr.Markdown(f"""
                 <div style="text-align: right; font-size: 0.9em; color: grey; line-height: 1.6;">
                     © {datetime.now().year} Lanka AI Nexus (Powered by Doctor On Care Pvt Ltd). All rights reserved. <br>
