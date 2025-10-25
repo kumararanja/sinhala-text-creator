@@ -853,12 +853,21 @@ def format_social_layers(social_layers: List[SocialLayer]) -> str:
 def create_interface():
     """Create the main Gradio interface"""
 
-    with gr.Blocks(title="Sinhala Text Creator", theme=gr.themes.Soft(), css="""
-    .color-picker { min-height: 120px !important; }
-    .color-picker input[type="color"] { width: 100% !important; height: 80px !important; border-radius: 8px !important; border: 2px solid #ddd !important; }
-    .color-picker label { font-weight: bold !important; margin-bottom: 8px !important; display: block !important; }
-    #social_bg_color_picker, #social_text_color_picker { min-height: 120px !important; }
-    """) as demo:
+    with gr.Blocks(
+        title="Sinhala Text Creator", 
+        theme=gr.themes.Soft(),
+        css="""
+        .color-picker { min-height: 100px !important; padding: 10px !important; }
+        .color-picker input[type="color"] { width: 100% !important; height: 60px !important; border-radius: 8px !important; border: 2px solid #ddd !important; cursor: pointer !important; }
+        .color-picker label { font-weight: bold !important; margin-bottom: 8px !important; display: block !important; color: #333 !important; }
+        .gradio-group { border: 1px solid #e0e0e0 !important; border-radius: 10px !important; padding: 15px !important; margin-bottom: 15px !important; background: white !important; }
+        .gradio-group .markdown { margin-bottom: 15px !important; }
+        button { border-radius: 8px !important; margin: 5px 0 !important; }
+        .gradio-textbox, .gradio-dropdown, .gradio-radio, .gradio-number { margin-bottom: 10px !important; }
+        .gradio-image { border: 2px dashed #ddd !important; border-radius: 10px !important; padding: 10px !important; }
+        .gradio-textbox[interactive=false] { background: #f8f9fa !important; border: 1px solid #e9ecef !important; }
+        """
+    ) as demo:
 
         user_state = gr.State(None)
 
@@ -1084,7 +1093,7 @@ def create_interface():
                     *Contact admin to upgrade your plan*
                     """)
 
-                # TAB 4 - SOCIAL POST CREATOR
+                # --- TAB 4 - SOCIAL POST CREATOR (FIXED VERSION) ---
                 with gr.Tab("📢 Social Post Creator"):
                     gr.Markdown("## 🖼️ Create Simple Social Media Posts")
                     
@@ -1098,48 +1107,154 @@ def create_interface():
                     
                     with gr.Row():
                         with gr.Column(scale=1):
-                            gr.Markdown("### 1. Setup")
-                            post_size_dd = gr.Dropdown(list(post_sizes.keys()), label="Select Post Size", value="Instagram Post (1:1)")
-                            bg_color_picker = gr.ColorPicker(value="#FFFFFF", label="Background Color", interactive=True, elem_id="social_bg_color_picker")
-                            create_canvas_btn = gr.Button("Set Background & Size", variant="secondary")
+                            # Background Settings
+                            with gr.Group():
+                                gr.Markdown("### 1. Setup")
+                                post_size_dd = gr.Dropdown(
+                                    list(post_sizes.keys()), 
+                                    label="Select Post Size", 
+                                    value="Instagram Post (1:1)"
+                                )
+                                bg_color_picker = gr.ColorPicker(
+                                    value="#FFFFFF", 
+                                    label="Background Color", 
+                                    interactive=True
+                                )
+                                create_canvas_btn = gr.Button(
+                                    "🎨 Set Background & Size", 
+                                    variant="primary"
+                                )
                             
-                            gr.Markdown("### 2. Add Elements")
-                            gr.Markdown("#### Text")
-                            social_preset_dd = gr.Dropdown(["Custom"] + list(PRESETS.keys()), value="Bold & Readable", label="✨ Text Effect Preset")
-                            heading_text = gr.Textbox(label="Heading Text", placeholder="Your Catchy Title...")
-                            paragraph_text = gr.Textbox(label="Paragraph Text", placeholder="Add more details here...", lines=3)
-                            text_font_dd = gr.Dropdown(list(fonts_available.keys()), label="Font Style", value=list(fonts_available.keys())[0])
-                            text_color_picker = gr.ColorPicker(label="Text Color", value="#000000", interactive=True, elem_id="social_text_color_picker")
-                            text_alignment_radio = gr.Radio(["Left", "Center", "Right"], label="Paragraph Alignment", value="Left")
-                            add_heading_btn = gr.Button("➕ Add Heading")
-                            add_paragraph_btn = gr.Button("➕ Add Paragraph")
+                            # Text Elements
+                            with gr.Group():
+                                gr.Markdown("### 2. Add Elements")
+                                gr.Markdown("#### 📝 Text Elements")
+                                social_preset_dd = gr.Dropdown(
+                                    ["Custom"] + list(PRESETS.keys()),
+                                    value="Bold & Readable", 
+                                    label="✨ Text Effect Preset"
+                                )
+                                
+                                heading_text = gr.Textbox(
+                                    label="Heading Text", 
+                                    placeholder="Your Catchy Title..."
+                                )
+                                add_heading_btn = gr.Button(
+                                    "➕ Add Heading", 
+                                    variant="secondary"
+                                )
+                                
+                                paragraph_text = gr.Textbox(
+                                    label="Paragraph Text", 
+                                    placeholder="Add more details here...", 
+                                    lines=3
+                                )
+                                text_font_dd = gr.Dropdown(
+                                    list(fonts_available.keys()), 
+                                    label="Font Style", 
+                                    value=list(fonts_available.keys())[0]
+                                )
+                                text_color_picker = gr.ColorPicker(
+                                    label="Text Color", 
+                                    value="#000000", 
+                                    interactive=True
+                                )
+                                text_alignment_radio = gr.Radio(
+                                    ["Left", "Center", "Right"], 
+                                    label="Paragraph Alignment", 
+                                    value="Left"
+                                )
+                                add_paragraph_btn = gr.Button(
+                                    "➕ Add Paragraph", 
+                                    variant="secondary"
+                                )
                             
-                            gr.Markdown("#### Logo (Optional)")
-                            logo_upload_img = gr.Image(label="Upload Logo (PNG Recommended)", type="pil", height=100)
-                            logo_size_radio = gr.Radio(["Small (50px)", "Medium (100px)", "Large (150px)"], label="Logo Size", value="Medium (100px)")
-                            gr.Markdown("*(Click preview image to position logo)*")
-                            with gr.Row():
-                                logo_x_num = gr.Number(label="Logo X", value=50, interactive=False)
-                                logo_y_num = gr.Number(label="Logo Y", value=50, interactive=False)
-                            add_logo_btn = gr.Button("➕ Add/Update Logo")
-                            
+                            # Logo Elements
+                            with gr.Group():
+                                gr.Markdown("#### 🖼️ Logo (Optional)")
+                                logo_upload_img = gr.Image(
+                                    label="Upload Logo (PNG Recommended)", 
+                                    type="pil", 
+                                    height=100
+                                )
+                                logo_size_radio = gr.Radio(
+                                    ["Small (50px)", "Medium (100px)", "Large (150px)"], 
+                                    label="Logo Size", 
+                                    value="Medium (100px)"
+                                )
+                                gr.Markdown("💡 **Tip:** Click preview image to position logo")
+                                with gr.Row():
+                                    logo_x_num = gr.Number(
+                                        label="Logo X Position", 
+                                        value=50, 
+                                        interactive=False
+                                    )
+                                    logo_y_num = gr.Number(
+                                        label="Logo Y Position", 
+                                        value=50, 
+                                        interactive=False
+                                    )
+                                add_logo_btn = gr.Button(
+                                    "➕ Add/Update Logo", 
+                                    variant="secondary"
+                                )
+                                
                         with gr.Column(scale=2):
-                            gr.Markdown("### Preview (Click Logo Position Here)")
-                            post_preview_img = gr.Image(label="Post Preview", interactive=True)
-                            post_status_text = gr.Textbox(label="Status", interactive=False)
-                            social_layers_list = gr.Textbox(label="📝 Elements", lines=5, interactive=False, value="No elements added yet")
-                            with gr.Row():
-                                social_remove_last_btn = gr.Button("🔙 Remove Last Element", variant="secondary")
-                                social_clear_all_btn = gr.Button("🗑️ Clear All Elements", variant="stop")
+                            # Preview Section
+                            with gr.Group():
+                                gr.Markdown("### 👀 Preview")
+                                gr.Markdown("Click on the image to set logo position")
+                                post_preview_img = gr.Image(
+                                    label="Post Preview", 
+                                    interactive=True,
+                                    height=400
+                                )
+                                post_status_text = gr.Textbox(
+                                    label="Status", 
+                                    interactive=False
+                                )
                             
-                            gr.Markdown("---")
-                            gr.Markdown("### 💾 Download Your Post")
-                            with gr.Row():
-                                social_format_choice = gr.Dropdown(["JPEG (Smaller File)", "PNG (Higher Quality)"], value="JPEG (Smaller File)", label="Choose Format")
-                                social_prepare_download_btn = gr.Button("Prepare Download", variant="secondary")
-                            with gr.Row():
-                                social_download_file = gr.File(label="Download Link", interactive=False)
-                                social_download_status = gr.Textbox(label="Status", interactive=False)
+                            # Layers List
+                            with gr.Group():
+                                gr.Markdown("### 📋 Elements List")
+                                social_layers_list = gr.Textbox(
+                                    label="Current Elements", 
+                                    lines=4, 
+                                    interactive=False, 
+                                    value="No elements added yet"
+                                )
+                                with gr.Row():
+                                    social_remove_last_btn = gr.Button(
+                                        "🗑️ Remove Last", 
+                                        variant="secondary"
+                                    )
+                                    social_clear_all_btn = gr.Button(
+                                        "🗑️ Clear All", 
+                                        variant="stop"
+                                    )
+                            
+                            # Download Section
+                            with gr.Group():
+                                gr.Markdown("### 💾 Download")
+                                with gr.Row():
+                                    social_format_choice = gr.Dropdown(
+                                        ["JPEG (Smaller File)", "PNG (Higher Quality)"], 
+                                        value="JPEG (Smaller File)", 
+                                        label="Choose Format"
+                                    )
+                                    social_prepare_download_btn = gr.Button(
+                                        "🚀 Prepare Download", 
+                                        variant="primary"
+                                    )
+                                with gr.Row():
+                                    social_download_file = gr.File(
+                                        label="Download Link", 
+                                        interactive=False
+                                    )
+                                    social_download_status = gr.Textbox(
+                                        label="Status", 
+                                        interactive=False
+                                    )
                     
                     # Event Handlers for Social Post Tab
                     def create_base_canvas(size_key, bg_color):
