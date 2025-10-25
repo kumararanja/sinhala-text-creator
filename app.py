@@ -819,27 +819,54 @@ def process_uploaded_image(image):
 
     return image, f"✅ Loaded: {image.width}x{image.height}px (FREE - no credits used!)"
 
-def save_image(image, format_choice):
-    """Save image to file"""
-    if image is None:
+# --- UPDATED save_image function ---
+def save_image(image_data, format_choice):
+    """Save image (PIL Image or NumPy array) to file"""
+    if image_data is None:
         return None, "❌ No image to save"
+
+    # Convert NumPy array to PIL Image if needed
+    if isinstance(image_data, np.ndarray):
+        try:
+            # Ensure data type is uint8 if it's a NumPy array
+            if image_data.dtype != np.uint8:
+                # Normalize if needed (e.g., if data is float 0-1)
+                if image_data.max() <= 1.0 and image_data.min() >= 0.0:
+                    image_data = (image_data * 255).astype(np.uint8)
+                else:
+                    # Otherwise, just try converting type
+                     image_data = image_data.astype(np.uint8)
+            pil_image = Image.fromarray(image_data)
+            print("Converted NumPy array to PIL Image for saving.")
+        except Exception as e:
+            print(f"Error converting NumPy array to PIL Image: {e}")
+            return None, f"❌ Save error: Could not convert image data - {e}"
+    elif isinstance(image_data, Image.Image):
+        pil_image = image_data # It's already a PIL Image
+    else:
+        return None, f"❌ Save error: Unknown image data type: {type(image_data)}"
 
     try:
         suffix = '.png' if "PNG" in format_choice else '.jpg'
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
 
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
+        # Use the pil_image variable from now on
+        if pil_image.mode != 'RGB':
+            pil_image = pil_image.convert('RGB')
 
         if "PNG" in format_choice:
-            image.save(temp_file.name, format="PNG")
+            pil_image.save(temp_file.name, format="PNG")
         else:
-            image.save(temp_file.name, format="JPEG", quality=95)
+            pil_image.save(temp_file.name, format="JPEG", quality=95)
 
         temp_file.close()
         return temp_file.name, "✅ Ready to download!"
     except Exception as e:
-        return None, f"❌ Save error: {str(e)}"
+        # Print the specific error for debugging
+        print(f"Error during image save: {e}")
+        # Ensure the error message includes the actual exception
+        return None, f"❌ Save error: {e}"
+# --- END UPDATED save_image function ---
 
 def format_layers(layers):
     """Format layers list for display"""
@@ -1405,7 +1432,7 @@ def create_interface():
                         with gr.Column(scale=1):
                             gr.Markdown("### 1. Setup")
                             post_size_dd = gr.Dropdown(list(post_sizes.keys()), label="Select Post Size", value="Instagram Square (1:1)")
-                            bg_color_picker = gr.ColorPicker(label="Background Color", value="#FFFFFF", interactive=True) # <-- FIXED
+                            bg_color_picker = gr.ColorPicker(value="#FFFFFF", label="Background Color", interactive=True) # <-- FIXED
 
                             gr.Markdown("### 2. Text Content")
                             heading_text = gr.Textbox(label="Heading Text", placeholder="Your Catchy Title...")
@@ -1616,7 +1643,8 @@ def create_interface():
         # Register
         def handle_register(email, pwd, pwd2):
             if pwd != pwd2:
-                return None, "❌ Passwords don't match", gr.update(), gr.update()
+                # Need 6 return values to match login_btn outputs list
+                return None, "❌ Passwords don't match", gr.update(), gr.update(), gr.update(), gr.update()
             success, msg = register_user(email, pwd)
             # Need 6 return values to match login_btn outputs list
             return None, msg, gr.update(), gr.update(), gr.update(), gr.update()
