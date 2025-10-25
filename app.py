@@ -849,7 +849,16 @@ def create_interface():
                                 clear_all_btn = gr.Button("🗑️ Clear All", variant="stop")
                     
                     # --- Event Handlers for Tab 2 ---
-                    load_btn.click( lambda x: (x, "✅ Image loaded! Click on image to position text") if x else (None, "❌ No image in Tab 1"), [img_display], [preview, status] ).then( lambda x: x, [img_display], [base_image_state] )
+                    load_btn.click(
+                        lambda x: (x, "✅ Image loaded! Click on image to position text") if x else (None, "❌ No image in Tab 1"),
+                        [img_display],
+                        [preview, status]
+                    ).then(
+                        lambda x: x,
+                        [img_display],
+                        [base_image_state]
+                    )
+                    
                     def handle_click(evt: gr.SelectData):
                         return evt.index[0], evt.index[1], f"📍 Position set: ({evt.index[0]}, {evt.index[1]})"
                     preview.select(handle_click, None, [x_coord, y_coord, status])
@@ -859,7 +868,11 @@ def create_interface():
                             p = PRESETS[preset_name]
                             return ( p.get("text_color", "#FFFFFF"), p.get("outline_color", "#000000"), p.get("outline_width", 10), p.get("shadow_blur", 5), p.get("add_shadow", True), p.get("add_glow", False), p.get("effect_type", "normal") )
                         return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
-                    preset.change( update_from_preset, [preset], [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow, effect_type] )
+                    preset.change(
+                        update_from_preset,
+                        [preset],
+                        [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow, effect_type]
+                    )
                     
                     def add_text(base, layers, next_id, hist, txt, fnt, sz, tcol, ocol, ow, shad, blur, glow, opac, x, y, effect_type):
                         if not base: return layers, next_id, hist, format_layers(layers), None, "❌ Load image first"
@@ -869,7 +882,11 @@ def create_interface():
                         layers = layers + [new_layer]
                         result = render_all_layers(base, layers)
                         return layers, next_id + 1, hist, format_layers(layers), result, f"✅ Added Layer {next_id} with {effect_type} effect"
-                    add_btn.click( add_text, [base_image_state, layers_state, next_layer_id, history, text_input, font, font_size, text_color, outline_color, outline_w, add_shadow, shadow_blur, add_glow, opacity, x_coord, y_coord, effect_type], [layers_state, next_layer_id, history, layers_list, preview, status] )
+                    add_btn.click(
+                        add_text,
+                        [base_image_state, layers_state, next_layer_id, history, text_input, font, font_size, text_color, outline_color, outline_w, add_shadow, shadow_blur, add_glow, opacity, x_coord, y_coord, effect_type],
+                        [layers_state, next_layer_id, history, layers_list, preview, status]
+                    )
                     
                     def remove_last(base, layers, hist):
                         if not layers: return layers, hist, format_layers(layers), None, "⚠️ No layers"
@@ -877,7 +894,11 @@ def create_interface():
                         layers = layers[:-1]
                         result = render_all_layers(base, layers) if base else None
                         return layers, hist, format_layers(layers) if layers else "No layers yet", result, "✅ Removed last layer"
-                    remove_last_btn.click( remove_last, [base_image_state, layers_state, history], [layers_state, history, layers_list, preview, status] )
+                    remove_last_btn.click(
+                        remove_last,
+                        [base_image_state, layers_state, history],
+                        [layers_state, history, layers_list, preview, status]
+                    )
                     
                     def undo(base, layers, hist):
                         if not hist: return layers, hist, format_layers(layers), None, "⚠️ Nothing to undo"
@@ -885,12 +906,20 @@ def create_interface():
                         hist = hist[:-1]
                         result = render_all_layers(base, layers) if base else None
                         return layers, hist, format_layers(layers) if layers else "No layers yet", result, "↩️ Undone"
-                    undo_btn.click( undo, [base_image_state, layers_state, history], [layers_state, history, layers_list, preview, status] )
+                    undo_btn.click(
+                        undo,
+                        [base_image_state, layers_state, history],
+                        [layers_state, history, layers_list, preview, status]
+                    )
                     
                     def clear_all_layers(base):
                         if base: return [], 1, [], "No layers yet", base, "✅ All layers cleared"
                         return [], 1, [], "No layers yet", None, "⚠️ No image loaded"
-                    clear_all_btn.click( clear_all_layers, [base_image_state], [layers_state, next_layer_id, history, layers_list, preview, status] )
+                    clear_all_btn.click(
+                        clear_all_layers,
+                        [base_image_state],
+                        [layers_state, next_layer_id, history, layers_list, preview, status]
+                    )
                     
                     gr.Markdown("---")
                     gr.Markdown("### 💾 Download Your Image")
@@ -900,7 +929,11 @@ def create_interface():
                     with gr.Row():
                         download_file = gr.File(label="Download Link", interactive=False)
                         download_status = gr.Textbox(label="Status", interactive=False)
-                    prepare_download_btn.click( fn=save_image, inputs=[preview, format_choice], outputs=[download_file, download_status] )
+                    prepare_download_btn.click(
+                        fn=save_image,
+                        inputs=[preview, format_choice],
+                        outputs=[download_file, download_status]
+                    )
 
                 # TAB 3 - UPGRADE
                 with gr.Tab("💎 Upgrade"):
@@ -909,7 +942,12 @@ def create_interface():
                 # --- TAB 4 - SOCIAL POST CREATOR ---
                 with gr.Tab("📢 Social Post Creator"):
                     gr.Markdown("## 🖼️ Create Simple Social Media Posts")
-                    social_post_base_image = gr.State(None); social_layers_state = gr.State([]); social_next_layer_id = gr.State(1); social_history = gr.State([]); logo_image_state = gr.State(None); social_effect_type_state = gr.State("normal");
+                    social_post_base_image = gr.State(None)
+                    social_layers_state = gr.State([])
+                    social_next_layer_id = gr.State(1)
+                    social_history = gr.State([])
+                    logo_image_state = gr.State(None)
+                    social_effect_type_state = gr.State("normal")
                     with gr.Row():
                         with gr.Column(scale=1):
                             gr.Markdown("### 1. Setup")
@@ -956,53 +994,111 @@ def create_interface():
                                 social_download_status = gr.Textbox(label="Status", interactive=False)
                     
                     # --- Event Handlers for Social Post Tab ---
-                    def store_logo(img): print("Logo uploaded and stored in state."); return img;
-                    logo_upload_img.upload(store_logo, inputs=[logo_upload_img], outputs=[logo_image_state]);
-                    def set_logo_pos(evt: gr.SelectData): return evt.index[0], evt.index[1];
-                    post_preview_img.select(set_logo_pos, inputs=None, outputs=[logo_x_num, logo_y_num]);
+                    def store_logo(img):
+                        print("Logo uploaded and stored in state.")
+                        return img
+                    logo_upload_img.upload(store_logo, inputs=[logo_upload_img], outputs=[logo_image_state])
+                    
+                    def set_logo_pos(evt: gr.SelectData):
+                        return evt.index[0], evt.index[1]
+                    post_preview_img.select(set_logo_pos, inputs=None, outputs=[logo_x_num, logo_y_num])
+                    
                     def update_social_controls_from_preset(preset_name):
-                        if preset_name in PRESETS: settings = PRESETS[preset_name]; return ( settings.get("text_color", "#000000"), settings.get("effect_type", "normal") );
-                        return gr.update(), gr.update();
-                    social_preset_dd.change( fn=update_social_controls_from_preset, inputs=[social_preset_dd], outputs=[text_color_picker, social_effect_type_state] );
+                        if preset_name in PRESETS:
+                            settings = PRESETS[preset_name]
+                            return ( settings.get("text_color", "#000000"), settings.get("effect_type", "normal") )
+                        return gr.update(), gr.update()
+                    social_preset_dd.change(
+                        fn=update_social_controls_from_preset,
+                        inputs=[social_preset_dd],
+                        outputs=[text_color_picker, social_effect_type_state]
+                    )
+                    
                     def add_heading_element(current_layers, next_id, head_txt, font_key, txt_color, effect_type, preset_name):
-                        if not head_txt.strip(): return current_layers, next_id, "Enter heading text";
-                        props = {'type': 'text', 'text': head_txt, 'font_key': font_key, 'color': txt_color, 'is_heading': True, 'effect_type': effect_type};
-                        if preset_name in PRESETS: props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000');
-                        new_layer = SocialLayer(id=next_id, type='text', properties=props); updated_layers = current_layers + [new_layer];
-                        return updated_layers, next_id + 1, "Heading added";
-                    add_heading_btn.click( fn=add_heading_element, inputs=[social_layers_state, social_next_layer_id, heading_text, text_font_dd, text_color_picker, social_effect_type_state, social_preset_dd], outputs=[social_layers_state, social_next_layer_id, post_status_text] );
+                        if not head_txt.strip(): return current_layers, next_id, "Enter heading text"
+                        props = {'type': 'text', 'text': head_txt, 'font_key': font_key, 'color': txt_color, 'is_heading': True, 'effect_type': effect_type}
+                        if preset_name in PRESETS: props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000')
+                        new_layer = SocialLayer(id=next_id, type='text', properties=props)
+                        updated_layers = current_layers + [new_layer]
+                        return updated_layers, next_id + 1, "Heading added"
+                    add_heading_btn.click(
+                        fn=add_heading_element,
+                        inputs=[social_layers_state, social_next_layer_id, heading_text, text_font_dd, text_color_picker, social_effect_type_state, social_preset_dd],
+                        outputs=[social_layers_state, social_next_layer_id, post_status_text]
+                    )
+                    
                     def add_paragraph_element(current_layers, next_id, para_txt, font_key, txt_color, align, effect_type, preset_name):
-                        if not para_txt.strip(): return current_layers, next_id, "Enter paragraph text";
-                        props = {'type': 'text', 'text': para_txt, 'font_key': font_key, 'color': txt_color, 'align': align, 'is_heading': False, 'effect_type': effect_type};
-                        if preset_name in PRESETS: props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000');
-                        new_layer = SocialLayer(id=next_id, type='text', properties=props); updated_layers = current_layers + [new_layer];
-                        return updated_layers, next_id + 1, "Paragraph added";
-                    add_paragraph_btn.click( fn=add_paragraph_element, inputs=[social_layers_state, social_next_layer_id, paragraph_text, text_font_dd, text_color_picker, text_alignment_radio, social_effect_type_state, social_preset_dd], outputs=[social_layers_state, social_next_layer_id, post_status_text] );
+                        if not para_txt.strip(): return current_layers, next_id, "Enter paragraph text"
+                        props = {'type': 'text', 'text': para_txt, 'font_key': font_key, 'color': txt_color, 'align': align, 'is_heading': False, 'effect_type': effect_type}
+                        if preset_name in PRESETS: props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000')
+                        new_layer = SocialLayer(id=next_id, type='text', properties=props)
+                        updated_layers = current_layers + [new_layer]
+                        return updated_layers, next_id + 1, "Paragraph added"
+                    add_paragraph_btn.click(
+                        fn=add_paragraph_element,
+                        inputs=[social_layers_state, social_next_layer_id, paragraph_text, text_font_dd, text_color_picker, text_alignment_radio, social_effect_type_state, social_preset_dd],
+                        outputs=[social_layers_state, social_next_layer_id, post_status_text]
+                    )
+                    
                     def add_logo_element(current_layers, next_id, logo_obj, size_str, x, y):
-                        if logo_obj is None: return current_layers, next_id, "Upload a logo first";
-                        current_layers = [lyr for lyr in current_layers if lyr.type != 'logo'];
-                        props = {'type': 'logo', 'logo_obj': logo_obj, 'size_str': size_str, 'x': x, 'y': y};
-                        new_layer = SocialLayer(id=next_id, type='logo', properties=props); updated_layers = current_layers + [new_layer];
-                        return updated_layers, next_id + 1, "Logo added/updated";
-                    add_logo_btn.click( fn=add_logo_element, inputs=[social_layers_state, social_next_layer_id, logo_image_state, logo_size_radio, logo_x_num, logo_y_num], outputs=[social_layers_state, social_next_layer_id, post_status_text] );
+                        if logo_obj is None: return current_layers, next_id, "Upload a logo first"
+                        current_layers = [lyr for lyr in current_layers if lyr.type != 'logo']
+                        props = {'type': 'logo', 'logo_obj': logo_obj, 'size_str': size_str, 'x': x, 'y': y}
+                        new_layer = SocialLayer(id=next_id, type='logo', properties=props)
+                        updated_layers = current_layers + [new_layer]
+                        return updated_layers, next_id + 1, "Logo added/updated"
+                    add_logo_btn.click(
+                        fn=add_logo_element,
+                        inputs=[social_layers_state, social_next_layer_id, logo_image_state, logo_size_radio, logo_x_num, logo_y_num],
+                        outputs=[social_layers_state, social_next_layer_id, post_status_text]
+                    )
+                    
                     def update_preview_and_layer_list(base_img, layers, size_key, bg_color):
                         if base_img is None:
-                            try: width, height = post_sizes[size_key];
-                                if not isinstance(bg_color, str) or not bg_color.startswith('#'): bg_color = "#FFFFFF";
-                                base_img = Image.new('RGB', (width, height), bg_color);
-                            except Exception as e: print(f"Error creating base image in update: {e}"); error_img = Image.new('RGB', (300, 100), color='gray'); draw = ImageDraw.Draw(error_img); draw.text((10,10), "Set Base First", fill="white"); return error_img, format_social_layers(layers);
-                        rendered_image = render_social_post(size_key, bg_color, layers); layer_text = format_social_layers(layers);
-                        return rendered_image, layer_text;
-                    trigger_components = [social_layers_state, social_post_base_image, post_size_dd, bg_color_picker];
-                    for component in trigger_components: component.change( fn=update_preview_and_layer_list, inputs=[social_post_base_image, social_layers_state, post_size_dd, bg_color_picker], outputs=[post_preview_img, social_layers_list] );
+                            try:
+                                width, height = post_sizes[size_key]
+                                if not isinstance(bg_color, str) or not bg_color.startswith('#'): bg_color = "#FFFFFF"
+                                base_img = Image.new('RGB', (width, height), bg_color)
+                            except Exception as e:
+                                print(f"Error creating base image in update: {e}")
+                                error_img = Image.new('RGB', (300, 100), color='gray')
+                                draw = ImageDraw.Draw(error_img)
+                                draw.text((10,10), "Set Base First", fill="white")
+                                return error_img, format_social_layers(layers)
+                        rendered_image = render_social_post(size_key, bg_color, layers)
+                        layer_text = format_social_layers(layers)
+                        return rendered_image, layer_text
+                    
+                    trigger_components = [social_layers_state, social_post_base_image, post_size_dd, bg_color_picker]
+                    for component in trigger_components:
+                         component.change(
+                             fn=update_preview_and_layer_list,
+                             inputs=[social_post_base_image, social_layers_state, post_size_dd, bg_color_picker],
+                             outputs=[post_preview_img, social_layers_list]
+                         )
+                    
                     def remove_last_social_layer(layers):
-                        if not layers: return layers, "No elements to remove";
-                        return layers[:-1], "✅ Removed last element";
-                    social_remove_last_btn.click( fn=remove_last_social_layer, inputs=[social_layers_state], outputs=[social_layers_state, post_status_text] );
+                        if not layers: return layers, "No elements to remove"
+                        return layers[:-1], "✅ Removed last element"
+                    social_remove_last_btn.click(
+                        fn=remove_last_social_layer,
+                        inputs=[social_layers_state],
+                        outputs=[social_layers_state, post_status_text]
+                    )
+                    
                     def clear_all_social_layers():
-                        return [], "✅ Cleared all elements";
-                    social_clear_all_btn.click( fn=clear_all_social_layers, inputs=[], outputs=[social_layers_state, post_status_text] );
-                    social_prepare_download_btn.click( fn=save_image, inputs=[post_preview_img, social_format_choice], outputs=[social_download_file, social_download_status] );
+                        return [], "✅ Cleared all elements"
+                    social_clear_all_btn.click(
+                        fn=clear_all_social_layers,
+                        inputs=[],
+                        outputs=[social_layers_state, post_status_text]
+                    )
+                    
+                    social_prepare_download_btn.click(
+                        fn=save_image,
+                        inputs=[post_preview_img, social_format_choice],
+                        outputs=[social_download_file, social_download_status]
+                    )
                 # --- END SOCIAL POST TAB ---
 
 
@@ -1028,14 +1124,18 @@ def create_interface():
                     # Admin Handlers
                     def admin_login(password):
                         if not password: return ( gr.update(visible=False), "❌ Please enter password", gr.update(), gr.update(visible=False), "" )
-                        if check_admin_password(password): stats = get_admin_stats(); return ( gr.update(visible=True), "✅ Access granted!", stats, gr.update(value=""), "" )
+                        if check_admin_password(password):
+                            stats = get_admin_stats()
+                            return ( gr.update(visible=True), "✅ Access granted!", stats, gr.update(value=""), "" )
                         return ( gr.update(visible=False), "❌ Invalid password", "Enter password to view stats", gr.update(), "" )
                     admin_login_btn.click( admin_login, [admin_password], [admin_panel, admin_message, admin_stats, admin_password, export_message] )
                     
-                    def admin_logout(): return ( gr.update(visible=False), "👋 Logged out from admin", "Enter password to view stats", gr.update(visible=False), "" )
+                    def admin_logout():
+                        return ( gr.update(visible=False), "👋 Logged out from admin", "Enter password to view stats", gr.update(visible=False), "" )
                     admin_logout_btn.click( admin_logout, None, [admin_panel, admin_message, admin_stats, export_file, export_message] )
                     
-                    def refresh_stats(): return get_admin_stats(), "🔄 Stats refreshed!"
+                    def refresh_stats():
+                        return get_admin_stats(), "🔄 Stats refreshed!"
                     refresh_btn.click( refresh_stats, None, [admin_stats, export_message] )
                     
                     def export_data():
@@ -1045,7 +1145,15 @@ def create_interface():
 
         # --- UPDATED FEATURES SECTION with SINHALA TRANSLATIONS ---
         with gr.Row(elem_id="features_section"):
-             gr.Markdown(""" ... Features ... """) # Minified
+             gr.Markdown("""
+             ---
+             ### ✨ Features (විශේෂාංග)
+             - 🆓 මාසිකව නොමිලේ AI උත්පාදන 5ක් (5 FREE AI generations per month)
+             - 📤 අසීමිත උඩුගත කිරීම් (නොමිලේ!) (Unlimited uploads FREE!)
+             - ✍️ අසීමිත පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
+             - 🎨 නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
+             - 🔄 මාසිකව ස්වයංක්‍රීයව යළි පිහිටුවේ (Auto-resets monthly)
+             """)
 
         # --- FOOTER SECTION ---
         gr.Markdown("---") # Add a separator line
