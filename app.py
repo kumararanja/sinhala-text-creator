@@ -50,9 +50,6 @@ def get_db_connection():
     # Get the database URL from environment
     DATABASE_URL = os.getenv("DATABASE_URL")
 
-    # Show debugging info
-    # print(f"🔍 Checking connection... URL exists: {bool(DATABASE_URL)}") # Less verbose
-
     if not DATABASE_URL:
         print("❌ DATABASE_URL not found in Hugging Face Secrets!")
         print("Fix: Go to Settings → Variables and secrets → New secret")
@@ -62,16 +59,12 @@ def get_db_connection():
 
     # Try to connect with better error messages
     try:
-        # print("🔄 Attempting to connect to database...") # Less verbose
-
         # If the URL starts with postgres:// change it to postgresql://
         if DATABASE_URL.startswith("postgres://"):
             DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-            # print("📝 Fixed URL format (postgres:// → postgresql://)") # Less verbose
 
         # Try Method 1: Direct connection
         conn = psycopg2.connect(DATABASE_URL)
-        # print("✅ Database connected successfully!") # Less verbose
         return conn
 
     except psycopg2.OperationalError as e:
@@ -408,11 +401,20 @@ def export_user_data() -> tuple:
 # FONTS & CONFIG
 # ============================================
 FONT_PATHS = {
-    "Abhaya Regular (Sinhala)": "fonts/AbhayaLibre-Regular.ttf", "Abhaya Bold (Sinhala)": "fonts/AbhayaLibre-Bold.ttf", "Abhaya Medium (Sinhala)": "fonts/AbhayaLibre-Medium.ttf",
-    "Noto Sans (Sinhala)": "fonts/NotoSansSinhala_Condensed-Regular.ttf", "Montserrat Bold": "fonts/Montserrat-Bold.ttf", "Montserrat Regular": "fonts/Montserrat-Regular.ttf",
-    "Montserrat Italic": "fonts/Montserrat-Italic.ttf", "Anton": "fonts/Anton-Regular.ttf", "Bebas Neue": "fonts/BebasNeue-Regular.ttf",
-    "Oswald Bold": "fonts/Oswald-Bold.ttf", "Oswald Regular": "fonts/Oswald-Regular.ttf", "Hind Madurai Bold (Tamil)": "fonts/HindMadurai-Bold.ttf",
-    "Hind Madurai Regular (Tamil)": "fonts/HindMadurai-Regular.ttf", "Catamaran (Tamil)": "fonts/Catamaran-Tamil.ttf"
+    "Abhaya Regular (Sinhala)": "fonts/AbhayaLibre-Regular.ttf", 
+    "Abhaya Bold (Sinhala)": "fonts/AbhayaLibre-Bold.ttf", 
+    "Abhaya Medium (Sinhala)": "fonts/AbhayaLibre-Medium.ttf",
+    "Noto Sans (Sinhala)": "fonts/NotoSansSinhala_Condensed-Regular.ttf", 
+    "Montserrat Bold": "fonts/Montserrat-Bold.ttf", 
+    "Montserrat Regular": "fonts/Montserrat-Regular.ttf",
+    "Montserrat Italic": "fonts/Montserrat-Italic.ttf", 
+    "Anton": "fonts/Anton-Regular.ttf", 
+    "Bebas Neue": "fonts/BebasNeue-Regular.ttf",
+    "Oswald Bold": "fonts/Oswald-Bold.ttf", 
+    "Oswald Regular": "fonts/Oswald-Regular.ttf", 
+    "Hind Madurai Bold (Tamil)": "fonts/HindMadurai-Bold.ttf",
+    "Hind Madurai Regular (Tamil)": "fonts/HindMadurai-Regular.ttf", 
+    "Catamaran (Tamil)": "fonts/Catamaran-Tamil.ttf"
 }
 fonts_available = {}
 print("--- Loading Fonts ---")
@@ -438,7 +440,15 @@ try:
 except:
     REPLICATE_AVAILABLE = False
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN", "")
-IMAGE_SIZES = { "Instagram Post (1:1)": (1080, 1080), "Instagram Story (9:16)": (1080, 1920), "YouTube Thumbnail (16:9)": (1280, 720) }
+
+# ADD MISSING VARIABLE - Define post_sizes for Social Media Creator tab
+IMAGE_SIZES = { 
+    "Instagram Post (1:1)": (1080, 1080), 
+    "Instagram Story (9:16)": (1080, 1920), 
+    "YouTube Thumbnail (16:9)": (1280, 720) 
+}
+post_sizes = IMAGE_SIZES  # Use the same sizes for social posts
+
 PRESETS = {
     "Bold & Readable": {"text_color": "#FFFFFF", "outline_color": "#000000", "outline_width": 10, "shadow_blur": 5, "add_shadow": True, "add_glow": False, "effect_type": "normal"},
     "Neon Glow 🌟": {"text_color": "#00FFFF", "outline_color": "#FF00FF", "outline_width": 3, "shadow_blur": 20, "add_shadow": False, "add_glow": True, "effect_type": "neon"},
@@ -449,7 +459,6 @@ PRESETS = {
     "Gradient Rainbow 🌈": {"text_color": "#FF1493", "outline_color": "#8A2BE2", "outline_width": 3, "shadow_blur": 5, "add_shadow": False, "add_glow": False, "effect_type": "gradient"},
     "Gold Luxury 👑": {"text_color": "#FFD700", "outline_color": "#B8860B", "outline_width": 8, "shadow_blur": 10, "add_shadow": True, "add_glow": False, "effect_type": "normal"}
 }
-
 
 @dataclass
 class TextLayer: # For Tab 2
@@ -479,7 +488,6 @@ class SocialLayer: # For Tab 4
 # ============================================
 # ADVANCED RENDERING FUNCTIONS (for Tab 2 & 4)
 # ============================================
-
 def apply_neon_effect(draw, text, font, x, y, base_color, glow_color, intensity=3):
     """Create neon glow effect"""
     base_rgb = tuple(int(base_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
@@ -598,6 +606,47 @@ def render_social_text_layer(draw, props, image=None):
     else:
         draw.text((text_x, text_y), text, fill=color, font=font_obj, anchor=text_anchor)
 
+# --- MISSING RENDERING FUNCTIONS FOR TAB 2 ---
+def render_text_layer(draw, layer, font):
+    """Render basic text layer with outline and shadow"""
+    try:
+        # Convert hex color to RGB
+        text_rgb = tuple(int(layer.text_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        outline_rgb = tuple(int(layer.outline_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        
+        # Draw outline
+        if layer.outline_width > 0:
+            for dx in range(-layer.outline_width, layer.outline_width + 1):
+                for dy in range(-layer.outline_width, layer.outline_width + 1):
+                    if dx != 0 or dy != 0:
+                        draw.text((layer.x + dx, layer.y + dy), layer.text, font=font, fill=outline_rgb)
+        
+        # Draw main text
+        draw.text((layer.x, layer.y), layer.text, font=font, fill=text_rgb)
+        
+    except Exception as e:
+        print(f"Error in render_text_layer: {e}")
+
+def render_text_layer_advanced(draw, layer, font, image=None):
+    """Render advanced effect text layer"""
+    try:
+        if layer.effect_type == "neon":
+            apply_neon_effect(draw, layer.text, font, layer.x, layer.y, layer.text_color, layer.outline_color)
+        elif layer.effect_type == "chrome":
+            apply_chrome_effect(draw, layer.text, font, layer.x, layer.y)
+        elif layer.effect_type == "fire":
+            apply_fire_effect(draw, layer.text, font, layer.x, layer.y)
+        elif layer.effect_type == "3d":
+            apply_3d_shadow_effect(draw, layer.text, font, layer.x, layer.y, layer.text_color, layer.outline_color)
+        elif layer.effect_type == "gradient" and image:
+            apply_gradient_effect(image, draw, layer.text, font, layer.x, layer.y, layer.text_color, layer.outline_color)
+        else:
+            # Fallback to normal rendering
+            render_text_layer(draw, layer, font)
+    except Exception as e:
+        print(f"Error in render_text_layer_advanced: {e}")
+        render_text_layer(draw, layer, font)
+
 # --- RENDERER FOR TAB 2 ---
 def render_all_layers(base_image, layers: List[TextLayer]):
     """Render all text layers onto base image with advanced effects for Tab 2"""
@@ -690,64 +739,102 @@ def render_social_post(size_key, bg_color, social_layers: List[SocialLayer]):
 # IMAGE GENERATION FUNCTIONS
 # ============================================
 def generate_image_with_auth(prompt, size_option, user_info, progress=gr.Progress()):
-    if not user_info: return None, "❌ Please login first";
-    can_generate, msg = increment_usage(user_info['id']);
-    if not can_generate: return None, msg;
-    if not REPLICATE_AVAILABLE or not REPLICATE_API_TOKEN: return None, "❌ AI generation not available. Check REPLICATE_API_TOKEN.";
-    progress(0, desc="Generating..."); width, height = IMAGE_SIZES[size_option];
+    if not user_info: 
+        return None, "❌ Please login first"
+    can_generate, msg = increment_usage(user_info['id'])
+    if not can_generate: 
+        return None, msg
+    if not REPLICATE_AVAILABLE or not REPLICATE_API_TOKEN: 
+        return None, "❌ AI generation not available. Check REPLICATE_API_TOKEN."
+    progress(0, desc="Generating...")
+    width, height = IMAGE_SIZES[size_option]
     try:
-        output = replicate.run("stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b", input={"prompt": prompt, "width": width, "height": height, "num_outputs": 1});
-        response = requests.get(output[0]); image = Image.open(io.BytesIO(response.content)); return image, msg;
-    except Exception as e: return None, f"❌ Generation error: {str(e)}";
+        output = replicate.run("stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b", 
+                              input={"prompt": prompt, "width": width, "height": height, "num_outputs": 1})
+        response = requests.get(output[0])
+        image = Image.open(io.BytesIO(response.content))
+        return image, msg
+    except Exception as e: 
+        return None, f"❌ Generation error: {str(e)}"
 
 def process_uploaded_image(image):
-    if image is None: return None, "❌ No image uploaded";
-    max_size = 2048;
-    if image.width > max_size or image.height > max_size: ratio = min(max_size / image.width, max_size / image.height); new_size = (int(image.width * ratio), int(image.height * ratio)); image = image.resize(new_size, Image.Resampling.LANCZOS);
-    return image, f"✅ Loaded: {image.width}x{image.height}px (FREE - no credits used!)";
+    if image is None: 
+        return None, "❌ No image uploaded"
+    max_size = 2048
+    if image.width > max_size or image.height > max_size: 
+        ratio = min(max_size / image.width, max_size / image.height)
+        new_size = (int(image.width * ratio), int(image.height * ratio))
+        image = image.resize(new_size, Image.Resampling.LANCZOS)
+    return image, f"✅ Loaded: {image.width}x{image.height}px (FREE - no credits used!)"
 
-# --- UPDATED save_image function ---
 def save_image(image_data, format_choice):
-    if image_data is None: return None, "❌ No image to save";
-    pil_image = None;
+    if image_data is None: 
+        return None, "❌ No image to save"
+    pil_image = None
     if isinstance(image_data, np.ndarray):
         try:
             if image_data.dtype != np.uint8:
-                if image_data.max() <= 1.0 and image_data.min() >= 0.0: image_data = (image_data * 255).astype(np.uint8);
-                else: image_data = image_data.astype(np.uint8);
-            pil_image = Image.fromarray(image_data); print("Converted NumPy array to PIL Image for saving.");
-        except Exception as e: print(f"Error converting NumPy array to PIL Image: {e}"); return None, f"❌ Save error: Could not convert image data - {e}";
-    elif isinstance(image_data, Image.Image): pil_image = image_data;
+                if image_data.max() <= 1.0 and image_data.min() >= 0.0: 
+                    image_data = (image_data * 255).astype(np.uint8)
+                else: 
+                    image_data = image_data.astype(np.uint8)
+            pil_image = Image.fromarray(image_data)
+            print("Converted NumPy array to PIL Image for saving.")
+        except Exception as e: 
+            print(f"Error converting NumPy array to PIL Image: {e}")
+            return None, f"❌ Save error: Could not convert image data - {e}"
+    elif isinstance(image_data, Image.Image): 
+        pil_image = image_data
     else:
-        if image_data is None: return None, "❌ No image data available to save.";
-        return None, f"❌ Save error: Unknown image data type: {type(image_data)}";
-    if pil_image is None: return None, "❌ Failed to prepare image for saving.";
+        if image_data is None: 
+            return None, "❌ No image data available to save."
+        return None, f"❌ Save error: Unknown image data type: {type(image_data)}"
+    
+    if pil_image is None: 
+        return None, "❌ Failed to prepare image for saving."
+    
     try:
-        suffix = '.png' if "PNG" in format_choice else '.jpg'; temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix);
-        img_to_save = pil_image;
+        suffix = '.png' if "PNG" in format_choice else '.jpg'
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+        img_to_save = pil_image
+        
         if img_to_save.mode != 'RGB':
-            if "JPEG" in format_choice and img_to_save.mode == 'RGBA': background = Image.new("RGB", img_to_save.size, (255, 255, 255)); background.paste(img_to_save, mask=img_to_save.split()[3]); img_to_save = background;
-            else: img_to_save = img_to_save.convert('RGB');
-        if "PNG" in format_choice: img_to_save.save(temp_file.name, format="PNG");
-        else: img_to_save.save(temp_file.name, format="JPEG", quality=95);
-        temp_file.close(); print(f"Image saved temporarily to: {temp_file.name}"); return temp_file.name, "✅ Ready to download!";
-    except Exception as e: print(f"Error during image save: {e}"); return None, f"❌ Save error: {e}";
-
+            if "JPEG" in format_choice and img_to_save.mode == 'RGBA': 
+                background = Image.new("RGB", img_to_save.size, (255, 255, 255))
+                background.paste(img_to_save, mask=img_to_save.split()[3])
+                img_to_save = background
+            else: 
+                img_to_save = img_to_save.convert('RGB')
+        
+        if "PNG" in format_choice: 
+            img_to_save.save(temp_file.name, format="PNG")
+        else: 
+            img_to_save.save(temp_file.name, format="JPEG", quality=95)
+        
+        temp_file.close()
+        print(f"Image saved temporarily to: {temp_file.name}")
+        return temp_file.name, "✅ Ready to download!"
+    except Exception as e: 
+        print(f"Error during image save: {e}")
+        return None, f"❌ Save error: {e}"
 
 # --- Functions to format layer lists ---
-def format_layers(layers: List[TextLayer]): # For Tab 2
-    if not layers: return "No layers yet"; lines = [];
-    for l in layers: status = "👁️" if l.visible else "🚫"; txt = l.text[:20] + "..." if len(l.text) > 20 else l.text; lines.append(f"{status} Layer {l.id}: {txt} ({l.effect_type})");
-    return "\n".join(lines);
+def format_layers(layers: List[TextLayer]):
+    if not layers: 
+        return "No layers yet"
+    lines = []
+    for l in layers: 
+        status = "👁️" if l.visible else "🚫"
+        txt = l.text[:20] + "..." if len(l.text) > 20 else l.text
+        lines.append(f"{status} Layer {l.id}: {txt} ({l.effect_type})")
+    return "\n".join(lines)
 
-# --- CORRECTED format_social_layers function ---
 def format_social_layers(social_layers: List[SocialLayer]) -> str:
     """Format social post layers list for display"""
     if not social_layers:
         return "No elements added yet"
     lines = []
     for layer in social_layers:
-        # --- CORRECTED INDENTATION ---
         status = "👁️" if layer.visible else "🚫"
         layer_type = layer.type.capitalize()
         desc = ""
@@ -759,7 +846,6 @@ def format_social_layers(social_layers: List[SocialLayer]) -> str:
         lines.append(f"{status} Layer {layer.id}: {layer_type} - {desc}")
     return "\n".join(lines)
 
-
 # ============================================
 # GRADIO INTERFACE
 # ============================================
@@ -767,22 +853,37 @@ def format_social_layers(social_layers: List[SocialLayer]) -> str:
 def create_interface():
     """Create the main Gradio interface"""
 
-    with gr.Blocks(title="Sinhala Text Creator", theme=gr.themes.Soft()) as demo:
+    with gr.Blocks(title="Sinhala Text Creator", theme=gr.themes.Soft(), css="""
+    .color-picker { min-height: 120px !important; }
+    .color-picker input[type="color"] { width: 100% !important; height: 80px !important; border-radius: 8px !important; border: 2px solid #ddd !important; }
+    .color-picker label { font-weight: bold !important; margin-bottom: 8px !important; display: block !important; }
+    #social_bg_color_picker, #social_text_color_picker { min-height: 120px !important; }
+    """) as demo:
 
         user_state = gr.State(None)
 
         # --- UPDATED INTRO HTML ---
-        gr.HTML(""" ... Intro HTML and CSS ... """) # Minified
+        gr.HTML("""
+        <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; margin-bottom: 20px;">
+            <h1 style="margin: 0; font-size: 2.5em;">🎨 Sinhala Text Creator Pro</h1>
+            <p style="font-size: 1.2em; margin: 10px 0;">Create stunning Sinhala text images with advanced effects • AI Image Generation • Social Media Posts</p>
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px; flex-wrap: wrap;">
+                <span style="background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px;">✓ Advanced Text Effects</span>
+                <span style="background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px;">✓ AI Image Generation</span>
+                <span style="background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px;">✓ Social Media Creator</span>
+                <span style="background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px;">✓ FREE Plan Available</span>
+            </div>
+        </div>
+        """)
 
         with gr.Row():
             login_status = gr.Markdown("**Status:** Not logged in", elem_id="login_status_md")
 
-        # --- AUTH SECTION - UPDATED WITH 2 COLUMNS ---
+        # --- AUTH SECTION ---
         with gr.Group(visible=True) as auth_section:
             with gr.Row(equal_height=True):
                 with gr.Column(scale=1):
                     gr.Markdown("## 🔐 Login or Register")
-                    # --- CORRECTED INDENTATION ---
                     with gr.Tabs():
                         with gr.Tab("Login"):
                             login_email = gr.Textbox(label="Email", placeholder="your@email.com")
@@ -796,19 +897,16 @@ def create_interface():
                             reg_btn = gr.Button("✨ Create FREE Account", variant="primary", size="lg")
                             reg_msg = gr.Textbox(label="Message", interactive=False)
                 with gr.Column(scale=1):
-                    gr.Image( value="login_image.jpg", label="Auth Image", show_label=False, container=False, show_download_button=False )
+                    gr.Image(value="login_image.jpg", label="Auth Image", show_label=False, container=False, show_download_button=False)
 
         # MAIN APP
         with gr.Group(visible=False) as main_app:
-
             with gr.Accordion("📊 Your Dashboard", open=True):
                 with gr.Row():
                     stats_display = gr.Markdown("Loading...")
                     logout_btn = gr.Button("🚪 Logout", size="sm")
 
-            # --- CORRECTED INDENTATION ---
-            with gr.Tabs(): # This line should be at the same level as the Accordion
-
+            with gr.Tabs():
                 # TAB 1 - Get Image
                 with gr.Tab("1️⃣ Get Image"):
                     gr.Markdown("### Get Your Base Image")
@@ -817,7 +915,6 @@ def create_interface():
                             gr.Markdown("#### 📤 Upload (FREE)")
                             upload_img = gr.Image(label="Upload", type="pil")
                             upload_btn = gr.Button("📤 Use Image", variant="primary")
-                        with gr.Column():
                             gr.Markdown("#### 🎨 Generate AI (Uses 1 credit)")
                             prompt = gr.Textbox(label="Prompt", lines=2, placeholder="sunset over ocean...")
                             size = gr.Dropdown(list(IMAGE_SIZES.keys()), value=list(IMAGE_SIZES.keys())[0])
@@ -830,9 +927,10 @@ def create_interface():
                 with gr.Tab("2️⃣ Add Text Effects"):
                     gr.Markdown("### 🎨 Advanced Text Effects Studio")
                     base_image_state = gr.State(None)
-                    layers_state = gr.State([]) # State for Tab 2 layers
+                    layers_state = gr.State([])
                     next_layer_id = gr.State(1)
                     history = gr.State([])
+                    
                     with gr.Row():
                         with gr.Column():
                             load_btn = gr.Button("🔄 Load Image from Tab 1", variant="primary", size="lg")
@@ -842,17 +940,17 @@ def create_interface():
                                 y_coord = gr.Number(label="Y Position", value=100, precision=0)
                             status = gr.Textbox(label="Status", interactive=False)
                         with gr.Column():
-                            text_input = gr.Textbox( label="✍️ Enter Your Text", lines=2, placeholder="Type your text here..." )
-                            preset = gr.Dropdown( ["Custom"] + list(PRESETS.keys()), value="Neon Glow 🌟", label="✨ Quick Effect Presets" )
+                            text_input = gr.Textbox(label="✍️ Enter Your Text", lines=2, placeholder="Type your text here...")
+                            preset = gr.Dropdown(["Custom"] + list(PRESETS.keys()), value="Neon Glow 🌟", label="✨ Quick Effect Presets")
                             with gr.Row():
-                                font = gr.Dropdown( list(fonts_available.keys()), value=list(fonts_available.keys())[0], label="Font Style" )
+                                font = gr.Dropdown(list(fonts_available.keys()), value=list(fonts_available.keys())[0], label="Font Style")
                                 font_size = gr.Slider(20, 300, 80, label="Font Size", step=5)
                             gr.Markdown("### 🎨 Colors")
                             with gr.Row():
-                                text_color = gr.ColorPicker( value="#FFFFFF", label="📝 Text Color", interactive=True, elem_id="text_color_picker" )
-                                outline_color = gr.ColorPicker( value="#000000", label="🔲 Outline/Glow Color", interactive=True, elem_id="outline_color_picker" )
+                                text_color = gr.ColorPicker(value="#FFFFFF", label="📝 Text Color", interactive=True, elem_id="text_color_picker")
+                                outline_color = gr.ColorPicker(value="#000000", label="🔲 Outline/Glow Color", interactive=True, elem_id="outline_color_picker")
                             with gr.Accordion("⚙️ Advanced Effect Controls", open=True):
-                                effect_type = gr.Dropdown( ["normal", "neon", "chrome", "fire", "3d", "gradient"], value="neon", label="Effect Style" )
+                                effect_type = gr.Dropdown(["normal", "neon", "chrome", "fire", "3d", "gradient"], value="neon", label="Effect Style")
                                 outline_w = gr.Slider(0, 30, 3, label="Outline Width", step=1)
                                 with gr.Row():
                                     add_shadow = gr.Checkbox(label="Add Shadow", value=False)
@@ -860,54 +958,101 @@ def create_interface():
                                 shadow_blur = gr.Slider(0, 50, 20, label="Shadow/Glow Blur", step=1)
                                 opacity = gr.Slider(0, 100, 100, label="Text Opacity %", step=5)
                             add_btn = gr.Button("➕ ADD TEXT TO IMAGE", variant="primary", size="lg")
-                            layers_list = gr.Textbox( label="📝 Text Layers", lines=5, interactive=False, value="No layers yet" )
+                            layers_list = gr.Textbox(label="📝 Text Layers", lines=5, interactive=False, value="No layers yet")
                             with gr.Row():
                                 remove_last_btn = gr.Button("🔙 Remove Last", variant="secondary")
                                 undo_btn = gr.Button("↩️ Undo", variant="secondary")
                                 clear_all_btn = gr.Button("🗑️ Clear All", variant="stop")
                     
-                    # --- Event Handlers for Tab 2 ---
-                    load_btn.click( lambda x: (x, "✅ Image loaded! Click on image to position text") if x else (None, "❌ No image in Tab 1"), [img_display], [preview, status] ).then( lambda x: x, [img_display], [base_image_state] )
-                    def handle_click(evt: gr.SelectData): return evt.index[0], evt.index[1], f"📍 Position set: ({evt.index[0]}, {evt.index[1]})"
+                    # Event Handlers for Tab 2
+                    load_btn.click(
+                        lambda x: (x, "✅ Image loaded! Click on image to position text") if x else (None, "❌ No image in Tab 1"), 
+                        [img_display], [preview, status]
+                    ).then(
+                        lambda x: x, [img_display], [base_image_state]
+                    )
+                    
+                    def handle_click(evt: gr.SelectData): 
+                        return evt.index[0], evt.index[1], f"📍 Position set: ({evt.index[0]}, {evt.index[1]})"
                     preview.select(handle_click, None, [x_coord, y_coord, status])
                     
                     def update_from_preset(preset_name):
-                        if preset_name in PRESETS:
+                        if preset_name in PRESETS: 
                             p = PRESETS[preset_name]
-                            return ( p.get("text_color", "#FFFFFF"), p.get("outline_color", "#000000"), p.get("outline_width", 10), p.get("shadow_blur", 5), p.get("add_shadow", True), p.get("add_glow", False), p.get("effect_type", "normal") )
+                            return (
+                                p.get("text_color", "#FFFFFF"),
+                                p.get("outline_color", "#000000"), 
+                                p.get("outline_width", 10),
+                                p.get("shadow_blur", 5),
+                                p.get("add_shadow", True),
+                                p.get("add_glow", False),
+                                p.get("effect_type", "normal")
+                            )
                         return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
-                    preset.change( update_from_preset, [preset], [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow, effect_type] )
+                    
+                    preset.change(
+                        update_from_preset, [preset], 
+                        [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow, effect_type]
+                    )
                     
                     def add_text(base, layers, next_id, hist, txt, fnt, sz, tcol, ocol, ow, shad, blur, glow, opac, x, y, effect_type):
-                        if not base: return layers, next_id, hist, format_layers(layers), None, "❌ Load image first"
-                        if not txt.strip(): return layers, next_id, hist, format_layers(layers), None, "❌ Enter text"
+                        if not base: 
+                            return layers, next_id, hist, format_layers(layers), None, "❌ Load image first"
+                        if not txt.strip(): 
+                            return layers, next_id, hist, format_layers(layers), None, "❌ Enter text"
                         hist = (hist + [copy.deepcopy(layers)])[-20:]
-                        new_layer = TextLayer( next_id, txt, fnt, int(sz), tcol, int(x), int(y), int(ow), ocol, shad, int(blur), glow, int(opac), True, effect_type )
+                        new_layer = TextLayer(
+                            next_id, txt, fnt, int(sz), tcol, int(x), int(y), int(ow), ocol, 
+                            shad, int(blur), glow, int(opac), True, effect_type
+                        )
                         layers = layers + [new_layer]
                         result = render_all_layers(base, layers)
                         return layers, next_id + 1, hist, format_layers(layers), result, f"✅ Added Layer {next_id} with {effect_type} effect"
-                    add_btn.click( add_text, [base_image_state, layers_state, next_layer_id, history, text_input, font, font_size, text_color, outline_color, outline_w, add_shadow, shadow_blur, add_glow, opacity, x_coord, y_coord, effect_type], [layers_state, next_layer_id, history, layers_list, preview, status] )
+                    
+                    add_btn.click(
+                        add_text,
+                        [base_image_state, layers_state, next_layer_id, history, text_input, font, font_size, text_color, outline_color, outline_w, add_shadow, shadow_blur, add_glow, opacity, x_coord, y_coord, effect_type],
+                        [layers_state, next_layer_id, history, layers_list, preview, status]
+                    )
                     
                     def remove_last(base, layers, hist):
-                        if not layers: return layers, hist, format_layers(layers), None, "⚠️ No layers"
+                        if not layers: 
+                            return layers, hist, format_layers(layers), None, "⚠️ No layers"
                         hist = (hist + [copy.deepcopy(layers)])[-20:]
                         layers = layers[:-1]
                         result = render_all_layers(base, layers) if base else None
                         return layers, hist, format_layers(layers) if layers else "No layers yet", result, "✅ Removed last layer"
-                    remove_last_btn.click( remove_last, [base_image_state, layers_state, history], [layers_state, history, layers_list, preview, status] )
+                    
+                    remove_last_btn.click(
+                        remove_last,
+                        [base_image_state, layers_state, history],
+                        [layers_state, history, layers_list, preview, status]
+                    )
                     
                     def undo(base, layers, hist):
-                        if not hist: return layers, hist, format_layers(layers), None, "⚠️ Nothing to undo"
+                        if not hist: 
+                            return layers, hist, format_layers(layers), None, "⚠️ Nothing to undo"
                         layers = copy.deepcopy(hist[-1])
                         hist = hist[:-1]
                         result = render_all_layers(base, layers) if base else None
                         return layers, hist, format_layers(layers) if layers else "No layers yet", result, "↩️ Undone"
-                    undo_btn.click( undo, [base_image_state, layers_state, history], [layers_state, history, layers_list, preview, status] )
+                    
+                    undo_btn.click(
+                        undo,
+                        [base_image_state, layers_state, history],
+                        [layers_state, history, layers_list, preview, status]
+                    )
                     
                     def clear_all_layers(base):
-                        if base: return [], 1, [], "No layers yet", base, "✅ All layers cleared"
+                        if base: 
+                            return [], 1, [], "No layers yet", base, "✅ All layers cleared"
                         return [], 1, [], "No layers yet", None, "⚠️ No image loaded"
-                    clear_all_btn.click( clear_all_layers, [base_image_state], [layers_state, next_layer_id, history, layers_list, preview, status] )
+                    
+                    clear_all_btn.click(
+                        clear_all_layers,
+                        [base_image_state],
+                        [layers_state, next_layer_id, history, layers_list, preview, status]
+                    )
                     
                     gr.Markdown("---")
                     gr.Markdown("### 💾 Download Your Image")
@@ -917,30 +1062,54 @@ def create_interface():
                     with gr.Row():
                         download_file = gr.File(label="Download Link", interactive=False)
                         download_status = gr.Textbox(label="Status", interactive=False)
-                    prepare_download_btn.click( fn=save_image, inputs=[preview, format_choice], outputs=[download_file, download_status] )
+                    
+                    prepare_download_btn.click(
+                        fn=save_image, 
+                        inputs=[preview, format_choice], 
+                        outputs=[download_file, download_status]
+                    )
 
                 # TAB 3 - UPGRADE
                 with gr.Tab("💎 Upgrade"):
-                   gr.Markdown(""" ... Pricing Plans ... """) # Minified
+                    gr.Markdown("""
+                    ### 💎 Upgrade Your Plan
+                    
+                    | Plan | Monthly Generations | Price | Features |
+                    |------|-------------------|-------|----------|
+                    | **FREE** | 5 | $0/month | Basic text effects, image upload |
+                    | **STARTER** | 25 | $4.99/month | All FREE features + AI generation |
+                    | **POPULAR** | 60 | $9.99/month | All STARTER features + Priority processing |
+                    | **PREMIUM** | 200 | $19.99/month | All POPULAR features + Custom fonts |
+                    
+                    *Contact admin to upgrade your plan*
+                    """)
 
-                # --- TAB 4 - SOCIAL POST CREATOR ---
+                # TAB 4 - SOCIAL POST CREATOR
                 with gr.Tab("📢 Social Post Creator"):
                     gr.Markdown("## 🖼️ Create Simple Social Media Posts")
-                    social_post_base_image = gr.State(None); social_layers_state = gr.State([]); social_next_layer_id = gr.State(1); social_history = gr.State([]); logo_image_state = gr.State(None); social_effect_type_state = gr.State("normal");
+                    
+                    # State variables
+                    social_post_base_image = gr.State(None)
+                    social_layers_state = gr.State([])
+                    social_next_layer_id = gr.State(1)
+                    social_history = gr.State([])
+                    logo_image_state = gr.State(None)
+                    social_effect_type_state = gr.State("normal")
+                    
                     with gr.Row():
                         with gr.Column(scale=1):
                             gr.Markdown("### 1. Setup")
-                            post_size_dd = gr.Dropdown(list(post_sizes.keys()), label="Select Post Size", value="Instagram Square (1:1)")
-                            bg_color_picker = gr.ColorPicker(value="#FFFFFF", label="Background Color", interactive=True, elem_id="social_bg_color_picker") # <-- FIXED with elem_id
+                            post_size_dd = gr.Dropdown(list(post_sizes.keys()), label="Select Post Size", value="Instagram Post (1:1)")
+                            bg_color_picker = gr.ColorPicker(value="#FFFFFF", label="Background Color", interactive=True, elem_id="social_bg_color_picker")
                             create_canvas_btn = gr.Button("Set Background & Size", variant="secondary")
                             
                             gr.Markdown("### 2. Add Elements")
                             gr.Markdown("#### Text")
-                            social_preset_dd = gr.Dropdown( ["Custom"] + list(PRESETS.keys()), value="Bold & Readable", label="✨ Text Effect Preset" )
+                            social_preset_dd = gr.Dropdown(["Custom"] + list(PRESETS.keys()), value="Bold & Readable", label="✨ Text Effect Preset")
                             heading_text = gr.Textbox(label="Heading Text", placeholder="Your Catchy Title...")
                             paragraph_text = gr.Textbox(label="Paragraph Text", placeholder="Add more details here...", lines=3)
                             text_font_dd = gr.Dropdown(list(fonts_available.keys()), label="Font Style", value=list(fonts_available.keys())[0])
-                            text_color_picker = gr.ColorPicker(label="Text Color", value="#000000", interactive=True, elem_id="social_text_color_picker") # <-- FIXED with elem_id
+                            text_color_picker = gr.ColorPicker(label="Text Color", value="#000000", interactive=True, elem_id="social_text_color_picker")
                             text_alignment_radio = gr.Radio(["Left", "Center", "Right"], label="Paragraph Alignment", value="Left")
                             add_heading_btn = gr.Button("➕ Add Heading")
                             add_paragraph_btn = gr.Button("➕ Add Paragraph")
@@ -972,86 +1141,281 @@ def create_interface():
                                 social_download_file = gr.File(label="Download Link", interactive=False)
                                 social_download_status = gr.Textbox(label="Status", interactive=False)
                     
-                    # --- Event Handlers for Social Post Tab ---
-                    def store_logo(img): print("Logo uploaded and stored in state."); return img;
-                    logo_upload_img.upload(store_logo, inputs=[logo_upload_img], outputs=[logo_image_state]);
-                    def set_logo_pos(evt: gr.SelectData): return evt.index[0], evt.index[1];
-                    post_preview_img.select(set_logo_pos, inputs=None, outputs=[logo_x_num, logo_y_num]);
+                    # Event Handlers for Social Post Tab
+                    def create_base_canvas(size_key, bg_color):
+                        try:
+                            width, height = post_sizes[size_key]
+                            if not isinstance(bg_color, str) or not bg_color.startswith('#'):
+                                bg_color = "#FFFFFF"
+                            img = Image.new('RGB', (width, height), bg_color)
+                            return img, [], 1, [], "Canvas set. Add elements.", "No elements added yet"
+                        except Exception as e:
+                            print(f"Error creating canvas: {e}")
+                            return None, [], 1, [], f"Error: {e}", "Error"
+                    
+                    create_canvas_btn.click(
+                        fn=create_base_canvas,
+                        inputs=[post_size_dd, bg_color_picker],
+                        outputs=[social_post_base_image, social_layers_state, social_next_layer_id, social_history, post_status_text, social_layers_list]
+                    )
+                    
+                    def store_logo(img): 
+                        print("Logo uploaded and stored in state.")
+                        return img
+                    
+                    logo_upload_img.upload(
+                        store_logo, 
+                        inputs=[logo_upload_img], 
+                        outputs=[logo_image_state]
+                    )
+                    
+                    def set_logo_pos(evt: gr.SelectData): 
+                        return evt.index[0], evt.index[1]
+                    
+                    post_preview_img.select(
+                        set_logo_pos, 
+                        inputs=None, 
+                        outputs=[logo_x_num, logo_y_num]
+                    )
+                    
                     def update_social_controls_from_preset(preset_name):
-                        if preset_name in PRESETS: settings = PRESETS[preset_name]; return ( settings.get("text_color", "#000000"), settings.get("effect_type", "normal") );
-                        return gr.update(), gr.update();
-                    social_preset_dd.change( fn=update_social_controls_from_preset, inputs=[social_preset_dd], outputs=[text_color_picker, social_effect_type_state] );
-                    def add_heading_element(current_layers, next_id, head_txt, font_key, txt_color, effect_type, preset_name):
-                        if not head_txt.strip(): return current_layers, next_id, "Enter heading text";
-                        props = {'type': 'text', 'text': head_txt, 'font_key': font_key, 'color': txt_color, 'is_heading': True, 'effect_type': effect_type};
-                        if preset_name in PRESETS: props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000');
-                        new_layer = SocialLayer(id=next_id, type='text', properties=props); updated_layers = current_layers + [new_layer];
-                        return updated_layers, next_id + 1, "Heading added";
-                    add_heading_btn.click( fn=add_heading_element, inputs=[social_layers_state, social_next_layer_id, heading_text, text_font_dd, text_color_picker, social_effect_type_state, social_preset_dd], outputs=[social_layers_state, social_next_layer_id, post_status_text] );
-                    def add_paragraph_element(current_layers, next_id, para_txt, font_key, txt_color, align, effect_type, preset_name):
-                        if not para_txt.strip(): return current_layers, next_id, "Enter paragraph text";
-                        props = {'type': 'text', 'text': para_txt, 'font_key': font_key, 'color': txt_color, 'align': align, 'is_heading': False, 'effect_type': effect_type};
-                        if preset_name in PRESETS: props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000');
-                        new_layer = SocialLayer(id=next_id, type='text', properties=props); updated_layers = current_layers + [new_layer];
-                        return updated_layers, next_id + 1, "Paragraph added";
-                    add_paragraph_btn.click( fn=add_paragraph_element, inputs=[social_layers_state, social_next_layer_id, paragraph_text, text_font_dd, text_color_picker, text_alignment_radio, social_effect_type_state, social_preset_dd], outputs=[social_layers_state, social_next_layer_id, post_status_text] );
+                        if preset_name in PRESETS: 
+                            settings = PRESETS[preset_name]
+                            return (
+                                settings.get("text_color", "#000000"),
+                                settings.get("effect_type", "normal")
+                            )
+                        return gr.update(), gr.update()
+                    
+                    social_preset_dd.change(
+                        fn=update_social_controls_from_preset,
+                        inputs=[social_preset_dd],
+                        outputs=[text_color_picker, social_effect_type_state]
+                    )
+                    
+                    def add_heading_element(current_layers, next_id, head_txt, font_key, txt_color, effect_type):
+                        if not head_txt.strip(): 
+                            return current_layers, next_id, "Enter heading text"
+                        props = {
+                            'type': 'text', 'text': head_txt, 'font_key': font_key,
+                            'color': txt_color, 'is_heading': True, 'effect_type': effect_type
+                        }
+                        preset_name = social_preset_dd.value
+                        if preset_name in PRESETS:
+                            props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000')
+                        new_layer = SocialLayer(id=next_id, type='text', properties=props)
+                        updated_layers = current_layers + [new_layer]
+                        return updated_layers, next_id + 1, "Heading added"
+                    
+                    add_heading_btn.click(
+                        fn=add_heading_element,
+                        inputs=[social_layers_state, social_next_layer_id, heading_text, text_font_dd, text_color_picker, social_effect_type_state],
+                        outputs=[social_layers_state, social_next_layer_id, post_status_text]
+                    )
+                    
+                    def add_paragraph_element(current_layers, next_id, para_txt, font_key, txt_color, align, effect_type):
+                        if not para_txt.strip(): 
+                            return current_layers, next_id, "Enter paragraph text"
+                        props = {
+                            'type': 'text', 'text': para_txt, 'font_key': font_key,
+                            'color': txt_color, 'align': align, 'is_heading': False, 'effect_type': effect_type
+                        }
+                        preset_name = social_preset_dd.value
+                        if preset_name in PRESETS:
+                            props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000')
+                        new_layer = SocialLayer(id=next_id, type='text', properties=props)
+                        updated_layers = current_layers + [new_layer]
+                        return updated_layers, next_id + 1, "Paragraph added"
+                    
+                    add_paragraph_btn.click(
+                        fn=add_paragraph_element,
+                        inputs=[social_layers_state, social_next_layer_id, paragraph_text, text_font_dd, text_color_picker, text_alignment_radio, social_effect_type_state],
+                        outputs=[social_layers_state, social_next_layer_id, post_status_text]
+                    )
+                    
                     def add_logo_element(current_layers, next_id, logo_obj, size_str, x, y):
-                        if logo_obj is None: return current_layers, next_id, "Upload a logo first";
-                        current_layers = [lyr for lyr in current_layers if lyr.type != 'logo'];
-                        props = {'type': 'logo', 'logo_obj': logo_obj, 'size_str': size_str, 'x': x, 'y': y};
-                        new_layer = SocialLayer(id=next_id, type='logo', properties=props); updated_layers = current_layers + [new_layer];
-                        return updated_layers, next_id + 1, "Logo added/updated";
-                    add_logo_btn.click( fn=add_logo_element, inputs=[social_layers_state, social_next_layer_id, logo_image_state, logo_size_radio, logo_x_num, logo_y_num], outputs=[social_layers_state, social_next_layer_id, post_status_text] );
+                        if logo_obj is None: 
+                            return current_layers, next_id, "Upload a logo first"
+                        current_layers = [lyr for lyr in current_layers if lyr.type != 'logo']
+                        props = {'type': 'logo', 'logo_obj': logo_obj, 'size_str': size_str, 'x': x, 'y': y}
+                        new_layer = SocialLayer(id=next_id, type='logo', properties=props)
+                        updated_layers = current_layers + [new_layer]
+                        return updated_layers, next_id + 1, "Logo added/updated"
+                    
+                    add_logo_btn.click(
+                        fn=add_logo_element,
+                        inputs=[social_layers_state, social_next_layer_id, logo_image_state, logo_size_radio, logo_x_num, logo_y_num],
+                        outputs=[social_layers_state, social_next_layer_id, post_status_text]
+                    )
+                    
                     def update_preview_and_layer_list(base_img, layers, size_key, bg_color):
                         if base_img is None:
-                            try: width, height = post_sizes[size_key];
-                                if not isinstance(bg_color, str) or not bg_color.startswith('#'): bg_color = "#FFFFFF";
-                                base_img = Image.new('RGB', (width, height), bg_color);
-                            except Exception as e: print(f"Error creating base image in update: {e}"); error_img = Image.new('RGB', (300, 100), color='gray'); draw = ImageDraw.Draw(error_img); draw.text((10,10), "Set Base First", fill="white"); return error_img, format_social_layers(layers);
-                        rendered_image = render_social_post(size_key, bg_color, layers); layer_text = format_social_layers(layers);
-                        return rendered_image, layer_text;
-                    trigger_components = [social_layers_state, social_post_base_image, post_size_dd, bg_color_picker];
-                    for component in trigger_components: component.change( fn=update_preview_and_layer_list, inputs=[social_post_base_image, social_layers_state, post_size_dd, bg_color_picker], outputs=[post_preview_img, social_layers_list] );
+                            try:
+                                width, height = post_sizes[size_key]
+                                if not isinstance(bg_color, str) or not bg_color.startswith('#'): 
+                                    bg_color = "#FFFFFF"
+                                base_img = Image.new('RGB', (width, height), bg_color)
+                            except Exception as e:
+                                print(f"Error creating base image in update: {e}")
+                                error_img = Image.new('RGB', (300, 100), color='gray')
+                                draw = ImageDraw.Draw(error_img)
+                                draw.text((10,10), "Set Base First", fill="white")
+                                return error_img, format_social_layers(layers)
+                        rendered_image = render_social_post(size_key, bg_color, layers)
+                        layer_text = format_social_layers(layers)
+                        return rendered_image, layer_text
+                    
+                    trigger_components = [social_layers_state, social_post_base_image, post_size_dd, bg_color_picker]
+                    for component in trigger_components:
+                        component.change(
+                            fn=update_preview_and_layer_list,
+                            inputs=[social_post_base_image, social_layers_state, post_size_dd, bg_color_picker],
+                            outputs=[post_preview_img, social_layers_list]
+                        )
+                    
                     def remove_last_social_layer(layers):
-                        if not layers: return layers, "No elements to remove";
-                        return layers[:-1], "✅ Removed last element";
-                    social_remove_last_btn.click( fn=remove_last_social_layer, inputs=[social_layers_state], outputs=[social_layers_state, post_status_text] );
+                        if not layers: 
+                            return layers, "No elements to remove"
+                        return layers[:-1], "✅ Removed last element"
+                    
+                    social_remove_last_btn.click(
+                        fn=remove_last_social_layer,
+                        inputs=[social_layers_state],
+                        outputs=[social_layers_state, post_status_text]
+                    )
+                    
                     def clear_all_social_layers():
-                        return [], "✅ Cleared all elements";
-                    social_clear_all_btn.click( fn=clear_all_social_layers, inputs=[], outputs=[social_layers_state, post_status_text] );
-                    social_prepare_download_btn.click( fn=save_image, inputs=[post_preview_img, social_format_choice], outputs=[social_download_file, social_download_status] );
-                # --- END SOCIAL POST TAB ---
+                        return [], "✅ Cleared all elements"
+                    
+                    social_clear_all_btn.click(
+                        fn=clear_all_social_layers,
+                        inputs=[],
+                        outputs=[social_layers_state, post_status_text]
+                    )
+                    
+                    social_prepare_download_btn.click(
+                        fn=save_image,
+                        inputs=[post_preview_img, social_format_choice],
+                        outputs=[social_download_file, social_download_status]
+                    )
 
-
-                # TAB 5 - ADMIN (Now after Social Post Tab)
+                # TAB 5 - ADMIN
                 with gr.Tab("🔐 Admin"):
-                   # ... (Admin Tab code remains the same) ...
-                    gr.Markdown("## 🔐 Admin Dashboard"); gr.Markdown("*For administrators only*");
-                    with gr.Row(): admin_password = gr.Textbox( label="Admin Password", type="password", placeholder="Enter admin password to access" ); admin_login_btn = gr.Button("🔓 Access Admin Dashboard", variant="primary", size="lg");
-                    admin_message = gr.Markdown(""); with gr.Group(visible=False) as admin_panel: gr.Markdown("### 👨‍💼 Administrator Control Panel"); with gr.Row(): refresh_btn = gr.Button("🔄 Refresh Stats", variant="primary"); export_btn = gr.Button("📥 Export Users CSV", variant="secondary"); admin_logout_btn = gr.Button("🚪 Logout Admin", variant="stop"); admin_stats = gr.Markdown("Loading stats..."); with gr.Row(): export_file = gr.File(label="Download CSV", visible=False); export_message = gr.Markdown("");
-                    def admin_login(password): if not password: return ( gr.update(visible=False), "❌ Please enter password", gr.update(), gr.update(visible=False), "" ); if check_admin_password(password): stats = get_admin_stats(); return ( gr.update(visible=True), "✅ Access granted!", stats, gr.update(value=""), "" ); return ( gr.update(visible=False), "❌ Invalid password", "Enter password to view stats", gr.update(), "" ); admin_login_btn.click( admin_login, [admin_password], [admin_panel, admin_message, admin_stats, admin_password, export_message] );
-                    def admin_logout(): return ( gr.update(visible=False), "👋 Logged out from admin", "Enter password to view stats", gr.update(visible=False), "" ); admin_logout_btn.click( admin_logout, None, [admin_panel, admin_message, admin_stats, export_file, export_message] );
-                    def refresh_stats(): return get_admin_stats(), "🔄 Stats refreshed!"; refresh_btn.click( refresh_stats, None, [admin_stats, export_message] );
-                    def export_data(): file_path, message = export_user_data(); return (gr.update(value=file_path, visible=True), message) if file_path else (gr.update(visible=False), message); export_btn.click( export_data, None, [export_file, export_message] );
+                    gr.Markdown("## 🔐 Admin Dashboard")
+                    gr.Markdown("*For administrators only*")
+                    
+                    with gr.Row():
+                        admin_password = gr.Textbox(label="Admin Password", type="password", placeholder="Enter admin password to access")
+                        admin_login_btn = gr.Button("🔓 Access Admin Dashboard", variant="primary", size="lg")
+                    
+                    admin_message = gr.Markdown("")
+                    
+                    with gr.Group(visible=False) as admin_panel:
+                        gr.Markdown("### 👨‍💼 Administrator Control Panel")
+                        with gr.Row():
+                            refresh_btn = gr.Button("🔄 Refresh Stats", variant="primary")
+                            export_btn = gr.Button("📥 Export Users CSV", variant="secondary")
+                            admin_logout_btn = gr.Button("🚪 Logout Admin", variant="stop")
+                        
+                        admin_stats = gr.Markdown("Loading stats...")
+                        
+                        with gr.Row():
+                            export_file = gr.File(label="Download CSV", visible=False)
+                            export_message = gr.Markdown("")
+                    
+                    def admin_login(password):
+                        if not password:
+                            return (
+                                gr.update(visible=False),
+                                "❌ Please enter password",
+                                gr.update(),
+                                gr.update(visible=False),
+                                ""
+                            )
+                        if check_admin_password(password):
+                            stats = get_admin_stats()
+                            return (
+                                gr.update(visible=True),
+                                "✅ Access granted!",
+                                stats,
+                                gr.update(value=""),
+                                ""
+                            )
+                        return (
+                            gr.update(visible=False),
+                            "❌ Invalid password",
+                            "Enter password to view stats",
+                            gr.update(),
+                            ""
+                        )
+                    
+                    admin_login_btn.click(
+                        admin_login,
+                        [admin_password],
+                        [admin_panel, admin_message, admin_stats, admin_password, export_message]
+                    )
+                    
+                    def admin_logout():
+                        return (
+                            gr.update(visible=False),
+                            "👋 Logged out from admin",
+                            "Enter password to view stats",
+                            gr.update(visible=False),
+                            ""
+                        )
+                    
+                    admin_logout_btn.click(
+                        admin_logout,
+                        None,
+                        [admin_panel, admin_message, admin_stats, export_file, export_message]
+                    )
+                    
+                    def refresh_stats():
+                        return get_admin_stats(), "🔄 Stats refreshed!"
+                    
+                    refresh_btn.click(
+                        refresh_stats,
+                        None,
+                        [admin_stats, export_message]
+                    )
+                    
+                    def export_data():
+                        file_path, message = export_user_data()
+                        return (gr.update(value=file_path, visible=True), message) if file_path else (gr.update(visible=False), message)
+                    
+                    export_btn.click(
+                        export_data,
+                        None,
+                        [export_file, export_message]
+                    )
 
-        # --- UPDATED FEATURES SECTION with SINHALA TRANSLATIONS ---
+        # FEATURES SECTION
         with gr.Row(elem_id="features_section"):
-             gr.Markdown(""" ... Features ... """) # Minified
+            gr.Markdown("""
+            ---
+            ### ✨ Features (විශේෂාංග)
+            - 🆓 මාසිකව නොමිලේ AI උත්පාදන 5ක් (5 FREE AI generations per month)
+            - 📤 අසීමිත උඩුගත කිරීම් (නොමිලේ!) (Unlimited uploads FREE!)
+            - ✍️ අසීමිත පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
+            - 🎨 නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
+            - 🔄 මාසිකව ස්වයංක්‍රීයව යළි පිහිටුවේ (Auto-resets monthly)
+            """)
 
-        # --- FOOTER SECTION ---
-        gr.Markdown("---") # Add a separator line
+        # FOOTER SECTION
+        gr.Markdown("---")
         with gr.Row(elem_id="footer"):
             with gr.Column(scale=1, min_width=160):
                 gr.Image(
-                    value="logo.JPG", # <-- CORRECTED FILENAME CASE
+                    value="logo.JPG",
                     show_label=False,
                     height=50,
                     container=False,
                     show_download_button=False
                 )
             with gr.Column(scale=3):
-                terms_url = "https.www.google.com"; privacy_url = "https.www.google.com" # Dummy URLs
-                about_url = "https://lankaainexus.com/about-us/" # YOUR ABOUT US URL
+                terms_url = "https://lankaainexus.com/terms-and-conditions"
+                privacy_url = "https://lankaainexus.com/privacy-policy"
+                about_url = "https://lankaainexus.com/about-us/"
                 gr.Markdown(f"""
                 <div style="text-align: right; font-size: 0.9em; color: grey; line-height: 1.6;">
                     © {datetime.now().year} Lanka AI Nexus (Powered by Doctor On Care Pvt Ltd). All rights reserved. <br>
@@ -1061,10 +1425,7 @@ def create_interface():
                 </div>
                 """)
 
-
-        # EVENT HANDLERS (Login/Register/Logout/Generate/Upload)
-        
-        # Register
+        # EVENT HANDLERS
         def handle_register(email, pwd, pwd2):
             if pwd != pwd2:
                 return None, "❌ Passwords don't match", gr.update(), gr.update(), gr.update(), gr.update()
@@ -1077,7 +1438,6 @@ def create_interface():
             [user_state, reg_msg, auth_section, main_app, login_msg, stats_display]
         )
 
-        # Login
         def handle_login(email, pwd):
             success, msg, user_info = login_user(email, pwd)
             if success:
@@ -1086,9 +1446,9 @@ def create_interface():
                     user_info,
                     f"**Status:** ✅ {email}",
                     stats,
-                    gr.update(visible=False), # auth_section
-                    gr.update(visible=True),  # main_app
-                    msg                      # login_msg
+                    gr.update(visible=False),
+                    gr.update(visible=True),
+                    msg
                 )
             return None, "**Status:** Not logged in", "", gr.update(visible=True), gr.update(visible=False), msg
 
@@ -1098,15 +1458,14 @@ def create_interface():
             [user_state, login_status, stats_display, auth_section, main_app, login_msg]
         )
 
-        # Logout
         def handle_logout():
             return (
                 None,
                 "**Status:** Logged out",
-                "",                       # stats_display placeholder
-                gr.update(visible=True),  # auth_section
-                gr.update(visible=False), # main_app
-                "👋 Logged out"            # login_msg placeholder
+                "",
+                gr.update(visible=True),
+                gr.update(visible=False),
+                "👋 Logged out"
             )
 
         logout_btn.click(
@@ -1115,14 +1474,12 @@ def create_interface():
             [user_state, login_status, stats_display, auth_section, main_app, login_msg]
         )
 
-        # Upload (Tab 1)
         upload_btn.click(
             process_uploaded_image,
             [upload_img],
             [img_display, img_status]
         )
 
-        # Generate (Tab 1)
         def gen_and_update_stats(prompt, size, user_info):
             img, msg = generate_image_with_auth(prompt, size, user_info)
             if user_info:
@@ -1136,7 +1493,7 @@ def create_interface():
             [img_display, img_status, stats_display]
         )
 
-    return demo # Return demo should be the last line in create_interface
+    return demo
 
 # ============================================
 # LAUNCH
@@ -1175,5 +1532,4 @@ if __name__ == "__main__":
     print("=" * 50)
 
     demo = create_interface()
-    # Updated port to 8001
     demo.launch(server_name="0.0.0.0", server_port=8000)
