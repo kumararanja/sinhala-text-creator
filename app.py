@@ -479,8 +479,6 @@ class SocialLayer: # For Tab 4
 # ============================================
 # ADVANCED RENDERING FUNCTIONS (for Tab 2 & 4)
 # ============================================
-
-# --- CORRECTED MULTI-LINE FUNCTION ---
 def apply_neon_effect(draw, text, font, x, y, base_color, glow_color, intensity=3):
     """Create neon glow effect"""
     base_rgb = tuple(int(base_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
@@ -494,7 +492,6 @@ def apply_neon_effect(draw, text, font, x, y, base_color, glow_color, intensity=
     draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))
     draw.text((x, y), text, font=font, fill=base_rgb + (200,))
 
-# --- CORRECTED MULTI-LINE FUNCTION ---
 def apply_chrome_effect(draw, text, font, x, y):
     """Create chrome/metallic effect"""
     for offset in range(3, -1, -1):
@@ -503,7 +500,6 @@ def apply_chrome_effect(draw, text, font, x, y):
     draw.text((x + 1, y + 1), text, font=font, fill=(255, 255, 255, 180))
     draw.text((x, y), text, font=font, fill=(192, 192, 192, 255))
 
-# --- CORRECTED MULTI-LINE FUNCTION ---
 def apply_fire_effect(draw, text, font, x, y):
     """Create fire effect"""
     fire_colors = [
@@ -521,7 +517,6 @@ def apply_fire_effect(draw, text, font, x, y):
             draw.text((x - 1, y - offset + 1), text, font=font, fill=color + (alpha//2,))
             draw.text((x + 1, y - offset + 1), text, font=font, fill=color + (alpha//2,))
 
-# --- CORRECTED MULTI-LINE FUNCTION ---
 def apply_3d_shadow_effect(draw, text, font, x, y, text_color, shadow_color, depth=5):
     """Create 3D shadow effect"""
     text_rgb = tuple(int(text_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
@@ -530,7 +525,6 @@ def apply_3d_shadow_effect(draw, text, font, x, y, text_color, shadow_color, dep
         draw.text((x + i*2, y + i*2), text, font=font, fill=shadow_rgb + (200,))
     draw.text((x, y), text, font=font, fill=text_rgb + (255,))
 
-# --- CORRECTED MULTI-LINE FUNCTION ---
 def apply_gradient_effect(image, draw, text, font, x, y, color1, color2):
     """Create gradient text effect"""
     bbox = font.getbbox(text)
@@ -816,8 +810,8 @@ def create_interface():
 
                 # TAB 1 - Get Image
                 with gr.Tab("1️⃣ Get Image"):
-                    gr.Markdown("### Get Your Base Image")
-                    with gr.Row():
+                   gr.Markdown("### Get Your Base Image")
+                   with gr.Row():
                         with gr.Column():
                             gr.Markdown("#### 📤 Upload (FREE)")
                             upload_img = gr.Image(label="Upload", type="pil")
@@ -1015,6 +1009,7 @@ def create_interface():
                     social_clear_all_btn.click( fn=clear_all_social_layers, inputs=[], outputs=[social_layers_state, post_status_text] );
                     social_prepare_download_btn.click( fn=save_image, inputs=[post_preview_img, social_format_choice], outputs=[social_download_file, social_download_status] );
                 # --- END SOCIAL POST TAB ---
+
 
                 # TAB 5 - ADMIN (Now after Social Post Tab)
                 with gr.Tab("🔐 Admin"):
