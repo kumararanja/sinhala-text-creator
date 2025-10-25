@@ -1003,26 +1003,15 @@ def create_interface():
         # --- END INTRO HTML ---
 
         with gr.Row():
-            gr.Markdown("# 🎨 Advanced Text Creator Pro") # Kept original simpler title here
-            login_status = gr.Markdown("**Status:** Not logged in")
-
-        # --- ADDED IMAGE ABOVE AUTH ---
-        # gr.Image( # Uncomment and configure this if you want an image here
-        #     value="login_image.jpg", # Use the relative path (filename)
-        #     label="Auth Image",
-        #     show_label=False,
-        #     container=False,
-        #     # height=400, # Optional: Set a height
-        #     show_download_button=False
-        # )
-        # --- END IMAGE ---
+            #Removed the title here as it's now in the intro HTML
+            login_status = gr.Markdown("**Status:** Not logged in", elem_id="login_status_md")
 
         # --- AUTH SECTION - UPDATED WITH 2 COLUMNS ---
         with gr.Group(visible=True) as auth_section:
-            with gr.Row():
+            with gr.Row(equal_height=True): # Try making columns equal height
 
                 # --- Column 1: Login/Register Form ---
-                with gr.Column(scale=1): # Adjust scale if needed (e.g., scale=2 for wider form)
+                with gr.Column(scale=1): # Adjust scale if needed
                     gr.Markdown("## 🔐 Login or Register")
 
                     with gr.Tabs():
@@ -1040,14 +1029,14 @@ def create_interface():
                             reg_msg = gr.Textbox(label="Message", interactive=False)
 
                 # --- Column 2: Image ---
-                with gr.Column(scale=1): # Adjust scale if needed (e.g., scale=1 for equal width)
+                with gr.Column(scale=1): # Adjust scale if needed
                     gr.Image(
-                        value="login_image.jpg", # Use the relative path (filename)
+                        value="logo.jpg", # Use the relative path (filename) - RENAME your file to logo.jpg
                         label="Auth Image",
                         show_label=False,
                         container=False, # Removes border/padding
                         # height=400, # Optional: Set a height
-                        show_download_button=False # Hide download button for decorative image
+                        show_download_button=False # Hide download button
                     )
         # --- END AUTH SECTION ---
 
@@ -1417,17 +1406,47 @@ def create_interface():
                         [export_file, export_message]
                     )
 
-        # EVENT HANDLER for FEATURES section (This section was missing from previous versions)
-        with gr.Row():
+        # --- UPDATED FEATURES SECTION with SINHALA TRANSLATIONS ---
+        with gr.Row(elem_id="features_section"):
              gr.Markdown("""
              ---
-             ### ✨ Features
-             - 🆓 5 FREE AI generations per month
-             - 📤 Unlimited uploads (FREE!)
-             - ✍️ Unlimited text overlays (FREE!)
-             - 🎨 Advanced text effects: Neon, Chrome, Fire, 3D & more!
-             - 🔄 Auto-resets monthly
+             ### ✨ Features (විශේෂාංග)
+             - 🆓 මාසිකව නොමිලේ AI උත්පාදන 5ක් (5 FREE AI generations per month)
+             - 📤 අසීමිත උඩුගත කිරීම් (නොමිලේ!) (Unlimited uploads FREE!)
+             - ✍️ අසීමිත පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
+             - 🎨 උසස් පෙළ ප්‍රයෝග: නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
+             - 🔄 මාසිකව ස්වයංක්‍රීයව යළි පිහිටුවේ (Auto-resets monthly)
              """)
+
+        # --- FOOTER SECTION ---
+        gr.Markdown("---") # Add a separator line
+        with gr.Row(elem_id="footer"):
+            with gr.Column(scale=1, min_width=160): # Column for Logo, added min_width
+                gr.Image(
+                    value="logo.jpg", # Assumes logo.jpg is in the main directory
+                    show_label=False,
+                    height=50, # Adjust height as needed
+                    # width=150, # Let width adjust automatically or set explicitly
+                    container=False,
+                    show_download_button=False
+                )
+
+            with gr.Column(scale=3): # Column for Links (give it more space)
+                # Replace '#' with your actual URLs
+                terms_url = "https://lankaainexus.com/terms-and-conditions" # YOUR TERMS URL
+                privacy_url = "https://lankaainexus.com/privacy-policy" # YOUR PRIVACY URL
+                about_url = "https://lankaainexus.com/about-us/" # YOUR ABOUT US URL
+
+                gr.Markdown(f"""
+                <div style="text-align: right; font-size: 0.9em; color: grey; line-height: 1.6;">
+                    © {datetime.now().year} Lanka AI Nexus (Powered by Doctor On Care Pvt Ltd). All rights reserved. <br>
+                    <a href="{about_url}" target="_blank" style="color: grey; text-decoration: none;">About Us</a> |
+                    <a href="{terms_url}" target="_blank" style="color: grey; text-decoration: none;">Terms & Conditions</a> |
+                    <a href="{privacy_url}" target="_blank" style="color: grey; text-decoration: none;">Privacy Policy</a>
+                </div>
+                """)
+        # --- END FOOTER SECTION ---
+
 
         # EVENT HANDLERS (Login/Register/Logout/Generate/Upload)
 
@@ -1503,7 +1522,7 @@ def create_interface():
             [img_display, img_status, stats_display]
         )
 
-    return demo
+    return demo # Return demo should be the last line in create_interface
 
 # ============================================
 # LAUNCH
