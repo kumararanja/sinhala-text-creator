@@ -1,4 +1,3 @@
-
 """
 Sinhala Text Creator - COMPLETE VERSION WITH ADMIN DASHBOARD AND ADVANCED EFFECTS
 ==================================================================================
@@ -863,7 +862,7 @@ post_sizes = {
     "Twitter Post (16:9)": (1600, 900)
 }
 
-def generate_social_post(size_key, bg_color, head_txt, para_txt, font_key, txt_color, uploaded_logo, logo_size_str, logo_x_pos, logo_y_pos):
+def generate_social_post(size_key, bg_color, head_txt, para_txt, font_key, txt_color, uploaded_logo, logo_size_str, logo_x_pos, logo_y_pos, text_align): # Added text_align
     try:
         width, height = post_sizes[size_key]
         img = Image.new('RGB', (width, height), bg_color)
@@ -876,20 +875,31 @@ def generate_social_post(size_key, bg_color, head_txt, para_txt, font_key, txt_c
         heading_font = ImageFont.truetype(font_path, heading_font_size)
         para_font = ImageFont.truetype(font_path, para_font_size)
 
-        # --- Draw Text (Example: Centered Heading, Left-aligned Paragraph) ---
-        # Calculate heading position (centered horizontally, near top)
-        head_bbox = draw.textbbox((0,0), head_txt, font=heading_font)
+        # --- Draw Text ---
+        # Heading (centered horizontally, near top)
+        head_bbox = draw.textbbox((0,0), head_txt, font=heading_font, anchor="lt") # Use left-top anchor for bbox
         head_width = head_bbox[2] - head_bbox[0]
         head_x = (width - head_width) // 2
-        head_y = int(height * 0.1) # 10% from top
+        head_y = int(height * 0.1)
         draw.text((head_x, head_y), head_txt, fill=txt_color, font=heading_font)
+        head_bottom = head_y + (head_bbox[3] - head_bbox[1])
 
-        # Calculate paragraph position (below heading, with padding)
-        para_y = head_y + (head_bbox[3] - head_bbox[1]) + int(height * 0.05) # Add padding
-        para_x = int(width * 0.1) # 10% padding from left
-        # Basic wrapping (replace with more robust wrapping if needed)
-        # TODO: Implement proper text wrapping for paragraph
-        draw.text((para_x, para_y), para_txt, fill=txt_color, font=para_font)
+        # Paragraph (below heading, with padding and alignment)
+        para_y = head_bottom + int(height * 0.05) # Position below heading
+        para_anchor = "la" # Default Left align anchor (Left-Ascent)
+        para_x = int(width * 0.1) # Default 10% padding from left
+
+        if text_align == "Center":
+            para_anchor = "ma" # Middle align anchor (Middle-Ascent)
+            para_x = width // 2 # Center X coordinate
+        elif text_align == "Right":
+            para_anchor = "ra" # Right align anchor (Right-Ascent)
+            para_x = int(width * 0.9) # 10% padding from right
+
+        # TODO: Implement proper text wrapping for paragraph before drawing
+        # Simple drawing for now:
+        draw.text((para_x, para_y), para_txt, fill=txt_color, font=para_font, anchor=para_anchor)
+
 
         # --- Draw Logo ---
         if uploaded_logo:
@@ -1395,13 +1405,14 @@ def create_interface():
                         with gr.Column(scale=1):
                             gr.Markdown("### 1. Setup")
                             post_size_dd = gr.Dropdown(list(post_sizes.keys()), label="Select Post Size", value="Instagram Square (1:1)")
-                            bg_color_picker = gr.ColorPicker(label="Background Color", value="#FFFFFF")
+                            bg_color_picker = gr.ColorPicker(label="Background Color", value="#FFFFFF", interactive=True) # <-- FIXED
 
                             gr.Markdown("### 2. Text Content")
                             heading_text = gr.Textbox(label="Heading Text", placeholder="Your Catchy Title...")
                             paragraph_text = gr.Textbox(label="Paragraph Text", placeholder="Add more details here...", lines=4)
                             text_font_dd = gr.Dropdown(list(fonts_available.keys()), label="Font Style", value=list(fonts_available.keys())[0])
                             text_color_picker = gr.ColorPicker(label="Text Color", value="#000000")
+                            text_alignment_radio = gr.Radio(["Left", "Center", "Right"], label="Paragraph Alignment", value="Left") # <-- ADDED ALIGNMENT
 
                             gr.Markdown("### 3. Add Logo (Optional)")
                             logo_upload_img = gr.Image(label="Upload Logo (PNG Recommended)", type="pil", height=100)
@@ -1430,8 +1441,10 @@ def create_interface():
                                 social_download_status = gr.Textbox(label="Status", interactive=False)
 
                     # --- Event Handlers for Social Post Tab ---
-                    def store_logo(img): return img
-                    logo_upload_img.upload(store_logo, inputs=[logo_upload_img], outputs=[logo_image])
+                    def store_logo(img): # <-- FIXED LOGO UPLOAD
+                        print("Logo uploaded and stored in state.")
+                        return img
+                    logo_upload_img.upload(store_logo, inputs=[logo_upload_img], outputs=[logo_image]) # Output ONLY to state
 
                     def set_logo_pos(evt: gr.SelectData): return evt.index[0], evt.index[1]
                     post_preview_img.select(set_logo_pos, inputs=None, outputs=[logo_x_num, logo_y_num])
@@ -1441,7 +1454,8 @@ def create_interface():
                         inputs=[
                             post_size_dd, bg_color_picker,
                             heading_text, paragraph_text, text_font_dd, text_color_picker,
-                            logo_image, logo_size_radio, logo_x_num, logo_y_num
+                            logo_image, logo_size_radio, logo_x_num, logo_y_num,
+                            text_alignment_radio # <-- ADDED ALIGNMENT INPUT
                         ],
                         outputs=[post_preview_img, post_status_text]
                     )
@@ -1604,12 +1618,13 @@ def create_interface():
             if pwd != pwd2:
                 return None, "❌ Passwords don't match", gr.update(), gr.update()
             success, msg = register_user(email, pwd)
-            return None, msg, gr.update(), gr.update() # Matches original output expectations
+            # Need 6 return values to match login_btn outputs list
+            return None, msg, gr.update(), gr.update(), gr.update(), gr.update()
 
         reg_btn.click(
             handle_register,
             [reg_email, reg_password, reg_password2],
-            [user_state, reg_msg, auth_section, main_app] # Assumes reg_btn has same outputs as login_btn initially
+            [user_state, reg_msg, auth_section, main_app, login_msg, stats_display] # Match login_btn outputs
         )
 
         # Login (Simplified for testing - Social Post tab always visible)
@@ -1643,7 +1658,7 @@ def create_interface():
             return (
                 None,
                 "**Status:** Logged out",
-                "",
+                "",                       # stats_display placeholder
                 gr.update(visible=True),  # auth_section
                 gr.update(visible=False), # main_app
                 "👋 Logged out"            # login_msg placeholder
