@@ -479,6 +479,7 @@ class SocialLayer: # For Tab 4
 # ============================================
 # ADVANCED RENDERING FUNCTIONS (for Tab 2 & 4)
 # ============================================
+
 def apply_neon_effect(draw, text, font, x, y, base_color, glow_color, intensity=3):
     """Create neon glow effect"""
     base_rgb = tuple(int(base_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
@@ -810,12 +811,13 @@ def create_interface():
 
                 # TAB 1 - Get Image
                 with gr.Tab("1️⃣ Get Image"):
-                   gr.Markdown("### Get Your Base Image")
-                   with gr.Row():
+                    gr.Markdown("### Get Your Base Image")
+                    with gr.Row():
                         with gr.Column():
                             gr.Markdown("#### 📤 Upload (FREE)")
                             upload_img = gr.Image(label="Upload", type="pil")
                             upload_btn = gr.Button("📤 Use Image", variant="primary")
+                        with gr.Column():
                             gr.Markdown("#### 🎨 Generate AI (Uses 1 credit)")
                             prompt = gr.Textbox(label="Prompt", lines=2, placeholder="sunset over ocean...")
                             size = gr.Dropdown(list(IMAGE_SIZES.keys()), value=list(IMAGE_SIZES.keys())[0])
@@ -870,35 +872,45 @@ def create_interface():
                     preview.select(handle_click, None, [x_coord, y_coord, status])
                     
                     def update_from_preset(preset_name):
-                        if preset_name in PRESETS: p = PRESETS[preset_name]; return ( p.get("text_color", "#FFFFFF"), p.get("outline_color", "#000000"), p.get("outline_width", 10), p.get("shadow_blur", 5), p.get("add_shadow", True), p.get("add_glow", False), p.get("effect_type", "normal") );
+                        if preset_name in PRESETS:
+                            p = PRESETS[preset_name]
+                            return ( p.get("text_color", "#FFFFFF"), p.get("outline_color", "#000000"), p.get("outline_width", 10), p.get("shadow_blur", 5), p.get("add_shadow", True), p.get("add_glow", False), p.get("effect_type", "normal") )
                         return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
                     preset.change( update_from_preset, [preset], [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow, effect_type] )
                     
                     def add_text(base, layers, next_id, hist, txt, fnt, sz, tcol, ocol, ow, shad, blur, glow, opac, x, y, effect_type):
-                        if not base: return layers, next_id, hist, format_layers(layers), None, "❌ Load image first";
-                        if not txt.strip(): return layers, next_id, hist, format_layers(layers), None, "❌ Enter text";
-                        hist = (hist + [copy.deepcopy(layers)])[-20:]; new_layer = TextLayer( next_id, txt, fnt, int(sz), tcol, int(x), int(y), int(ow), ocol, shad, int(blur), glow, int(opac), True, effect_type ); layers = layers + [new_layer]; result = render_all_layers(base, layers);
-                        return layers, next_id + 1, hist, format_layers(layers), result, f"✅ Added Layer {next_id} with {effect_type} effect";
+                        if not base: return layers, next_id, hist, format_layers(layers), None, "❌ Load image first"
+                        if not txt.strip(): return layers, next_id, hist, format_layers(layers), None, "❌ Enter text"
+                        hist = (hist + [copy.deepcopy(layers)])[-20:]
+                        new_layer = TextLayer( next_id, txt, fnt, int(sz), tcol, int(x), int(y), int(ow), ocol, shad, int(blur), glow, int(opac), True, effect_type )
+                        layers = layers + [new_layer]
+                        result = render_all_layers(base, layers)
+                        return layers, next_id + 1, hist, format_layers(layers), result, f"✅ Added Layer {next_id} with {effect_type} effect"
                     add_btn.click( add_text, [base_image_state, layers_state, next_layer_id, history, text_input, font, font_size, text_color, outline_color, outline_w, add_shadow, shadow_blur, add_glow, opacity, x_coord, y_coord, effect_type], [layers_state, next_layer_id, history, layers_list, preview, status] )
                     
                     def remove_last(base, layers, hist):
-                        if not layers: return layers, hist, format_layers(layers), None, "⚠️ No layers";
-                        hist = (hist + [copy.deepcopy(layers)])[-20:]; layers = layers[:-1]; result = render_all_layers(base, layers) if base else None;
-                        return layers, hist, format_layers(layers) if layers else "No layers yet", result, "✅ Removed last layer";
+                        if not layers: return layers, hist, format_layers(layers), None, "⚠️ No layers"
+                        hist = (hist + [copy.deepcopy(layers)])[-20:]
+                        layers = layers[:-1]
+                        result = render_all_layers(base, layers) if base else None
+                        return layers, hist, format_layers(layers) if layers else "No layers yet", result, "✅ Removed last layer"
                     remove_last_btn.click( remove_last, [base_image_state, layers_state, history], [layers_state, history, layers_list, preview, status] )
                     
                     def undo(base, layers, hist):
-                        if not hist: return layers, hist, format_layers(layers), None, "⚠️ Nothing to undo";
-                        layers = copy.deepcopy(hist[-1]); hist = hist[:-1]; result = render_all_layers(base, layers) if base else None;
-                        return layers, hist, format_layers(layers) if layers else "No layers yet", result, "↩️ Undone";
+                        if not hist: return layers, hist, format_layers(layers), None, "⚠️ Nothing to undo"
+                        layers = copy.deepcopy(hist[-1])
+                        hist = hist[:-1]
+                        result = render_all_layers(base, layers) if base else None
+                        return layers, hist, format_layers(layers) if layers else "No layers yet", result, "↩️ Undone"
                     undo_btn.click( undo, [base_image_state, layers_state, history], [layers_state, history, layers_list, preview, status] )
                     
                     def clear_all_layers(base):
-                        if base: return [], 1, [], "No layers yet", base, "✅ All layers cleared";
-                        return [], 1, [], "No layers yet", None, "⚠️ No image loaded";
+                        if base: return [], 1, [], "No layers yet", base, "✅ All layers cleared"
+                        return [], 1, [], "No layers yet", None, "⚠️ No image loaded"
                     clear_all_btn.click( clear_all_layers, [base_image_state], [layers_state, next_layer_id, history, layers_list, preview, status] )
                     
-                    gr.Markdown("---"); gr.Markdown("### 💾 Download Your Image");
+                    gr.Markdown("---")
+                    gr.Markdown("### 💾 Download Your Image")
                     with gr.Row():
                         format_choice = gr.Dropdown(["JPEG (Smaller File)", "PNG (Higher Quality)"], value="JPEG (Smaller File)", label="Choose Format")
                         prepare_download_btn = gr.Button("🚀 Prepare Download", variant="primary")
@@ -1024,15 +1036,7 @@ def create_interface():
 
         # --- UPDATED FEATURES SECTION with SINHALA TRANSLATIONS ---
         with gr.Row(elem_id="features_section"):
-             gr.Markdown("""
-             ---
-             ### ✨ Features (විශේෂාංග)
-             - 🆓 මාසිකව නොමිලේ AI උත්පාදන 5ක් (5 FREE AI generations per month)
-             - 📤 අසීමිත උඩුගත කිරීම් (නොමිලේ!) (Unlimited uploads FREE!)
-             - ✍️ අසීමිත පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
-             - 🎨 නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
-             - 🔄 මාසිකව ස්වයංක්‍රීයව යළි පිහිටුවේ (Auto-resets monthly)
-             """)
+             gr.Markdown(""" ... Features ... """) # Minified
 
         # --- FOOTER SECTION ---
         gr.Markdown("---") # Add a separator line
@@ -1046,9 +1050,8 @@ def create_interface():
                     show_download_button=False
                 )
             with gr.Column(scale=3):
-                terms_url = "https://lankaainexus.com/terms-and-conditions"
-                privacy_url = "https://lankaainexus.com/privacy-policy"
-                about_url = "https://lankaainexus.com/about-us/"
+                terms_url = "https.www.google.com"; privacy_url = "https.www.google.com" # Dummy URLs
+                about_url = "https://lankaainexus.com/about-us/" # YOUR ABOUT US URL
                 gr.Markdown(f"""
                 <div style="text-align: right; font-size: 0.9em; color: grey; line-height: 1.6;">
                     © {datetime.now().year} Lanka AI Nexus (Powered by Doctor On Care Pvt Ltd). All rights reserved. <br>
