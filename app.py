@@ -868,6 +868,7 @@ def save_image(image_data, format_choice):
         return None, f"❌ Save error: {e}"
 # --- END UPDATED save_image function ---
 
+
 def format_layers(layers):
     """Format layers list for display"""
     if not layers:
@@ -892,7 +893,13 @@ post_sizes = {
 def generate_social_post(size_key, bg_color, head_txt, para_txt, font_key, txt_color, uploaded_logo, logo_size_str, logo_x_pos, logo_y_pos, text_align): # Added text_align
     try:
         width, height = post_sizes[size_key]
-        img = Image.new('RGB', (width, height), bg_color)
+        # --- DEBUGGING AND FIX FOR BG_COLOR ---
+        print(f"Received bg_color: {bg_color}, type: {type(bg_color)}")
+        if not isinstance(bg_color, str) or not bg_color.startswith('#'):
+             print(f"Warning: Invalid bg_color '{bg_color}', defaulting to white.")
+             bg_color = "#FFFFFF" # Fallback to white if color is invalid
+        # --- END DEBUGGING ---
+        img = Image.new('RGB', (width, height), bg_color) # Pillow handles hex strings
         draw = ImageDraw.Draw(img)
 
         # Load font
