@@ -20,7 +20,7 @@ import numpy as np  # For advanced effects
 # ============================================
 # DATABASE SETUP
 # ============================================
-# ... (Database connection code remains the same) ...
+
 # Check for required packages
 try:
     import psycopg2
@@ -959,7 +959,8 @@ def create_interface():
                     stats_display = gr.Markdown("Loading...")
                     logout_btn = gr.Button("🚪 Logout", size="sm")
 
-            with gr.Tabs():
+            # --- INDENTATION OF THIS BLOCK IS CRITICAL ---
+            with gr.Tabs(): # This should be at the same level as the Accordion
 
                 # TAB 1 - Get Image
                 with gr.Tab("1️⃣ Get Image"):
@@ -1156,7 +1157,7 @@ def create_interface():
         with gr.Row(elem_id="footer"):
             # ... (Footer code remains the same) ...
             with gr.Column(scale=1, min_width=160): gr.Image( value="logo.JPG", show_label=False, height=50, container=False, show_download_button=False );
-            with gr.Column(scale=3): terms_url = "https://lankaainexus.com/terms-and-conditions"; privacy_url = "https://lankaainexus.com/privacy-policy"; about_url = "https://lankaainexus.com/about-us/"; gr.Markdown(f"""<div style="text-align: right; font-size: 0.9em; color: grey; line-height: 1.6;"> © {datetime.now().year} Lanka AI Nexus (Powered by Doctor On Care Pvt Ltd). All rights reserved. <br> <a href="{about_url}" target="_blank" style="color: grey; text-decoration: none;">About Us</a> | <a href="{terms_url}" target="_blank" style="color: grey; text-decoration: none;">Terms & Conditions</a> | <a href="{privacy_url}" target="_blank" style="color: grey; text-decoration: none;">Privacy Policy</a> </div>""");
+            with gr.Column(scale=3): terms_url = "httpswww.google.com"; privacy_url = "httpswww.google.com"; about_url = "https://lankaainexus.com/about-us/"; gr.Markdown(f"""<div style="text-align: right; font-size: 0.9em; color: grey; line-height: 1.6;"> © {datetime.now().year} Lanka AI Nexus (Powered by Doctor On Care Pvt Ltd). All rights reserved. <br> <a href="{about_url}" target="_blank" style="color: grey; text-decoration: none;">About Us</a> | <a href="{terms_url}" target="_blank" style="color: grey; text-decoration: none;">Terms & Conditions</a> | <a href="{privacy_url}" target="_blank" style="color: grey; text-decoration: none;">Privacy Policy</a> </div>""");
 
 
         # EVENT HANDLERS (Login/Register/Logout/Generate/Upload)
