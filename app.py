@@ -511,6 +511,7 @@ for name, path in FONT_PATHS.items():
          print(f"  ❌ FAILED to load font '{name}' from path '{path}': {e}")
 print("--- Finished Loading Fonts ---") # Add another marker
 
+
 if not fonts_available:
     fonts_available["Fallback"] = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
@@ -863,27 +864,192 @@ def create_interface():
 
         user_state = gr.State(None)
 
+        # --- UPDATED INTRO HTML ---
+        gr.HTML("""
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&family=Noto+Sans+Sinhala:wght@400;700;800&display=swap" rel="stylesheet">
+
+        <style>
+            .hero-container {
+                padding: 60px 30px;
+                background: linear-gradient(120deg, #5f72bd 0%, #a4508b 100%); /* New gradient */
+                border-radius: 25px; /* Softer radius */
+                margin-bottom: 40px;
+                text-align: center;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                font-family: 'Poppins', sans-serif;
+                overflow: hidden; /* Prevent potential overflows */
+                position: relative; /* For pseudo-elements if needed later */
+            }
+            .hero-title {
+                font-size: 60px; /* Slightly larger */
+                font-weight: 800; /* Extra bold */
+                color: white;
+                margin-bottom: 15px;
+                text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+                letter-spacing: 0.5px;
+            }
+            .hero-subtitle {
+                font-size: 20px;
+                font-weight: 300;
+                color: #e0e7ff;
+                margin-bottom: 45px;
+                letter-spacing: 3px;
+                text-transform: uppercase; /* Uppercase for style */
+                opacity: 0.85;
+            }
+            .content-wrapper {
+                max-width: 900px; /* Slightly narrower */
+                margin: 0 auto 40px auto;
+                background: rgba(255, 255, 255, 1); /* Fully opaque */
+                border-radius: 20px;
+                padding: 40px 50px;
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            }
+            .lang-box {
+                padding: 30px;
+                border-radius: 15px;
+                margin-bottom: 25px;
+                border-left: 5px solid;
+                text-align: left;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            .lang-box:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            }
+            .lang-box h3 {
+                font-size: 26px;
+                font-weight: 700;
+                margin: 0 0 15px 0;
+                font-family: 'Noto Sans Sinhala', 'Poppins', sans-serif;
+            }
+            .lang-box p {
+                font-size: 17px;
+                line-height: 1.7;
+                margin: 0;
+                font-family: 'Noto Sans Sinhala', 'Poppins', sans-serif;
+            }
+            .sinhala-box {
+                background: #fff9e6; /* Soft yellow */
+                border-color: #764ba2;
+                color: #444;
+            }
+            .sinhala-box h3 { color: #5a3e75; }
+
+            .english-box {
+                background: #eef2ff; /* Soft blue */
+                border-color: #ffc872; /* Match Sinhala border accent */
+                color: #444;
+                margin-bottom: 0;
+            }
+             .english-box h3 { color: #506aac; }
+
+            .features-grid {
+                display: flex; /* Use flexbox */
+                flex-wrap: wrap; /* Allow wrapping */
+                justify-content: center; /* Center items */
+                gap: 15px; /* Space between tags */
+                margin-top: 30px; /* Space above tags */
+            }
+            .feature-pill {
+                background: rgba(255, 255, 255, 0.15);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: white;
+                padding: 12px 25px;
+                border-radius: 50px; /* Pill shape */
+                font-size: 15px;
+                font-weight: 500; /* Medium weight */
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                transition: all 0.25s ease-out;
+                cursor: default; /* Indicate non-clickable */
+            }
+            .feature-pill:hover {
+                background: rgba(255, 255, 255, 0.25);
+                transform: translateY(-3px) scale(1.03);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            }
+        </style>
+
+        <div class="hero-container">
+            <h1 class="hero-title">🌟 AkuruAI – අකුරුAI 🌟</h1>
+            <p class="hero-subtitle">Powered by Lanka AI Nexus</p>
+
+            <div class="content-wrapper">
+                <div class="lang-box sinhala-box">
+                    <h3>🇱🇰 සිංහල</h3>
+                    <p>
+                        <strong>AkuruAI (අකුරුAI)</strong> යනු ශ්‍රී ලංකාවේ ප්‍රථම සිංහල AI නිර්මාණාත්මක මෙවලමයි.
+                        මෙය භාවිතයෙන් ඔබට AI පින්තූර නිර්මාණය කර, ඒවාට සිංහල අකුරු යොදා, සජීවීකරණ ප්‍රයෝග එක් කළ හැකිය.
+                    </p>
+                </div>
+                <div class="lang-box english-box">
+                    <h3>🌍 English</h3>
+                    <p>
+                        <strong>AkuruAI</strong> is Sri Lanka's first Sinhala AI creative tool that brings artificial intelligence, language, and art together.
+                        With AkuruAI, you can instantly create stunning AI-generated images, add Sinhala text, and animate them with smart effects — all in one place.
+                    </p>
+                </div>
+            </div>
+
+            <div class="features-grid">
+                <span class="feature-pill">✨ AI Image Generation</span>
+                <span class="feature-pill">✍️ Sinhala Typography</span>
+                <span class="feature-pill">🎨 Smart Effects</span>
+                <span class="feature-pill">🆓 Free to Start</span>
+            </div>
+        </div>
+        """)
+        # --- END INTRO HTML ---
+
         with gr.Row():
-            gr.Markdown("# 🎨 Advanced Text Creator Pro")
+            gr.Markdown("# 🎨 Advanced Text Creator Pro") # Kept original simpler title here
             login_status = gr.Markdown("**Status:** Not logged in")
 
-        # AUTH SECTION
+        # --- ADDED IMAGE ABOVE AUTH ---
+        # gr.Image( # Uncomment and configure this if you want an image here
+        #     value="login_image.jpg", # Use the relative path (filename)
+        #     label="Auth Image",
+        #     show_label=False,
+        #     container=False,
+        #     # height=400, # Optional: Set a height
+        #     show_download_button=False
+        # )
+        # --- END IMAGE ---
+
+        # --- AUTH SECTION - UPDATED WITH 2 COLUMNS ---
         with gr.Group(visible=True) as auth_section:
-            gr.Markdown("## 🔐 Login Required")
+            with gr.Row():
 
-            with gr.Tabs():
-                with gr.Tab("Login"):
-                    login_email = gr.Textbox(label="Email", placeholder="your@email.com")
-                    login_password = gr.Textbox(label="Password", type="password")
-                    login_btn = gr.Button("🔑 Login", variant="primary", size="lg")
-                    login_msg = gr.Textbox(label="Message")
+                # --- Column 1: Login/Register Form ---
+                with gr.Column(scale=1): # Adjust scale if needed (e.g., scale=2 for wider form)
+                    gr.Markdown("## 🔐 Login or Register")
 
-                with gr.Tab("Register FREE"):
-                    reg_email = gr.Textbox(label="Email", placeholder="your@email.com")
-                    reg_password = gr.Textbox(label="Password (min 6 chars)", type="password")
-                    reg_password2 = gr.Textbox(label="Confirm Password", type="password")
-                    reg_btn = gr.Button("✨ Create FREE Account", variant="primary", size="lg")
-                    reg_msg = gr.Textbox(label="Message")
+                    with gr.Tabs():
+                        with gr.Tab("Login"):
+                            login_email = gr.Textbox(label="Email", placeholder="your@email.com")
+                            login_password = gr.Textbox(label="Password", type="password")
+                            login_btn = gr.Button("🔑 Login", variant="primary", size="lg")
+                            login_msg = gr.Textbox(label="Message", interactive=False)
+
+                        with gr.Tab("Register FREE"):
+                            reg_email = gr.Textbox(label="Email", placeholder="your@email.com")
+                            reg_password = gr.Textbox(label="Password (min 6 chars)", type="password")
+                            reg_password2 = gr.Textbox(label="Confirm Password", type="password")
+                            reg_btn = gr.Button("✨ Create FREE Account", variant="primary", size="lg")
+                            reg_msg = gr.Textbox(label="Message", interactive=False)
+
+                # --- Column 2: Image ---
+                with gr.Column(scale=1): # Adjust scale if needed (e.g., scale=1 for equal width)
+                    gr.Image(
+                        value="login_image.jpg", # Use the relative path (filename)
+                        label="Auth Image",
+                        show_label=False,
+                        container=False, # Removes border/padding
+                        # height=400, # Optional: Set a height
+                        show_download_button=False # Hide download button for decorative image
+                    )
+        # --- END AUTH SECTION ---
 
         # MAIN APP
         with gr.Group(visible=False) as main_app:
@@ -1251,7 +1417,19 @@ def create_interface():
                         [export_file, export_message]
                     )
 
-        # EVENT HANDLERS
+        # EVENT HANDLER for FEATURES section (This section was missing from previous versions)
+        with gr.Row():
+             gr.Markdown("""
+             ---
+             ### ✨ Features
+             - 🆓 5 FREE AI generations per month
+             - 📤 Unlimited uploads (FREE!)
+             - ✍️ Unlimited text overlays (FREE!)
+             - 🎨 Advanced text effects: Neon, Chrome, Fire, 3D & more!
+             - 🔄 Auto-resets monthly
+             """)
+
+        # EVENT HANDLERS (Login/Register/Logout/Generate/Upload)
 
         # Register
         def handle_register(email, pwd, pwd2):
@@ -1325,16 +1503,6 @@ def create_interface():
             [img_display, img_status, stats_display]
         )
 
-        gr.Markdown("""
-        ---
-        ### ✨ Features
-        - 🆓 5 FREE AI generations per month
-        - 📤 Unlimited uploads (FREE!)
-        - ✍️ Unlimited text overlays (FREE!)
-        - 🎨 Advanced text effects: Neon, Chrome, Fire, 3D & more!
-        - 🔄 Auto-resets monthly
-        """)
-
     return demo
 
 # ============================================
@@ -1377,4 +1545,3 @@ if __name__ == "__main__":
     demo = create_interface()
     # Updated port to 8001
     demo.launch(server_name="0.0.0.0", server_port=8000)
-
