@@ -479,6 +479,8 @@ class SocialLayer: # For Tab 4
 # ============================================
 # ADVANCED RENDERING FUNCTIONS (for Tab 2 & 4)
 # ============================================
+
+# --- CORRECTED MULTI-LINE FUNCTION ---
 def apply_neon_effect(draw, text, font, x, y, base_color, glow_color, intensity=3):
     """Create neon glow effect"""
     base_rgb = tuple(int(base_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
@@ -492,6 +494,7 @@ def apply_neon_effect(draw, text, font, x, y, base_color, glow_color, intensity=
     draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))
     draw.text((x, y), text, font=font, fill=base_rgb + (200,))
 
+# --- CORRECTED MULTI-LINE FUNCTION ---
 def apply_chrome_effect(draw, text, font, x, y):
     """Create chrome/metallic effect"""
     for offset in range(3, -1, -1):
@@ -517,8 +520,8 @@ def apply_fire_effect(draw, text, font, x, y):
         if i > 0:
             draw.text((x - 1, y - offset + 1), text, font=font, fill=color + (alpha//2,))
             draw.text((x + 1, y - offset + 1), text, font=font, fill=color + (alpha//2,))
-# --- END CORRECTION ---
 
+# --- CORRECTED MULTI-LINE FUNCTION ---
 def apply_3d_shadow_effect(draw, text, font, x, y, text_color, shadow_color, depth=5):
     """Create 3D shadow effect"""
     text_rgb = tuple(int(text_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
@@ -527,6 +530,7 @@ def apply_3d_shadow_effect(draw, text, font, x, y, text_color, shadow_color, dep
         draw.text((x + i*2, y + i*2), text, font=font, fill=shadow_rgb + (200,))
     draw.text((x, y), text, font=font, fill=text_rgb + (255,))
 
+# --- CORRECTED MULTI-LINE FUNCTION ---
 def apply_gradient_effect(image, draw, text, font, x, y, color1, color2):
     """Create gradient text effect"""
     bbox = font.getbbox(text)
@@ -812,25 +816,106 @@ def create_interface():
 
                 # TAB 1 - Get Image
                 with gr.Tab("1️⃣ Get Image"):
-                   # ... (Remains the same) ...
-                    gr.Markdown("### Get Your Base Image"); with gr.Row():
-                        with gr.Column(): gr.Markdown("#### 📤 Upload (FREE)"); upload_img = gr.Image(label="Upload", type="pil"); upload_btn = gr.Button("📤 Use Image", variant="primary"); gr.Markdown("#### 🎨 Generate AI (Uses 1 credit)"); prompt = gr.Textbox(label="Prompt", lines=2, placeholder="sunset over ocean..."); size = gr.Dropdown(list(IMAGE_SIZES.keys()), value=list(IMAGE_SIZES.keys())[0]); gen_btn = gr.Button("🎨 Generate", variant="secondary");
-                        with gr.Column(): img_display = gr.Image(label="Your Image", type="pil"); img_status = gr.Textbox(label="Status");
+                    gr.Markdown("### Get Your Base Image")
+                    with gr.Row():
+                        with gr.Column():
+                            gr.Markdown("#### 📤 Upload (FREE)")
+                            upload_img = gr.Image(label="Upload", type="pil")
+                            upload_btn = gr.Button("📤 Use Image", variant="primary")
+                            gr.Markdown("#### 🎨 Generate AI (Uses 1 credit)")
+                            prompt = gr.Textbox(label="Prompt", lines=2, placeholder="sunset over ocean...")
+                            size = gr.Dropdown(list(IMAGE_SIZES.keys()), value=list(IMAGE_SIZES.keys())[0])
+                            gen_btn = gr.Button("🎨 Generate", variant="secondary")
+                        with gr.Column():
+                            img_display = gr.Image(label="Your Image", type="pil")
+                            img_status = gr.Textbox(label="Status")
 
                 # TAB 2 - Add Text Effects
                 with gr.Tab("2️⃣ Add Text Effects"):
-                    # ... (Remains the same) ...
-                    gr.Markdown("### 🎨 Advanced Text Effects Studio"); base_image_state = gr.State(None); layers_state = gr.State([]); next_layer_id = gr.State(1); history = gr.State([]);
+                    gr.Markdown("### 🎨 Advanced Text Effects Studio")
+                    base_image_state = gr.State(None)
+                    layers_state = gr.State([]) # State for Tab 2 layers
+                    next_layer_id = gr.State(1)
+                    history = gr.State([])
                     with gr.Row():
-                        with gr.Column(): load_btn = gr.Button("🔄 Load Image from Tab 1", variant="primary", size="lg"); preview = gr.Image(label="Click to position text", type="pil", interactive=True); with gr.Row(): x_coord = gr.Number(label="X Position", value=100, precision=0); y_coord = gr.Number(label="Y Position", value=100, precision=0); status = gr.Textbox(label="Status", interactive=False);
-                        with gr.Column(): text_input = gr.Textbox( label="✍️ Enter Your Text", lines=2, placeholder="Type your text here..." ); preset = gr.Dropdown( ["Custom"] + list(PRESETS.keys()), value="Neon Glow 🌟", label="✨ Quick Effect Presets" ); with gr.Row(): font = gr.Dropdown( list(fonts_available.keys()), value=list(fonts_available.keys())[0], label="Font Style" ); font_size = gr.Slider(20, 300, 80, label="Font Size", step=5); gr.Markdown("### 🎨 Colors"); with gr.Row(): text_color = gr.ColorPicker( value="#FFFFFF", label="📝 Text Color", interactive=True, elem_id="text_color_picker" ); outline_color = gr.ColorPicker( value="#000000", label="🔲 Outline/Glow Color", interactive=True, elem_id="outline_color_picker" ); with gr.Accordion("⚙️ Advanced Effect Controls", open=True): effect_type = gr.Dropdown( ["normal", "neon", "chrome", "fire", "3d", "gradient"], value="neon", label="Effect Style" ); outline_w = gr.Slider(0, 30, 3, label="Outline Width", step=1); with gr.Row(): add_shadow = gr.Checkbox(label="Add Shadow", value=False); add_glow = gr.Checkbox(label="Add Glow", value=True); shadow_blur = gr.Slider(0, 50, 20, label="Shadow/Glow Blur", step=1); opacity = gr.Slider(0, 100, 100, label="Text Opacity %", step=5); add_btn = gr.Button("➕ ADD TEXT TO IMAGE", variant="primary", size="lg"); layers_list = gr.Textbox( label="📝 Text Layers", lines=5, interactive=False, value="No layers yet" ); with gr.Row(): remove_last_btn = gr.Button("🔙 Remove Last", variant="secondary"); undo_btn = gr.Button("↩️ Undo", variant="secondary"); clear_all_btn = gr.Button("🗑️ Clear All", variant="stop");
-                    load_btn.click( lambda x: (x, "✅ Image loaded! Click on image to position text") if x else (None, "❌ No image in Tab 1"), [img_display], [preview, status] ).then( lambda x: x, [img_display], [base_image_state] ); def handle_click(evt: gr.SelectData): return evt.index[0], evt.index[1], f"📍 Position set: ({evt.index[0]}, {evt.index[1]})"; preview.select(handle_click, None, [x_coord, y_coord, status]); def update_from_preset(preset_name): if preset_name in PRESETS: p = PRESETS[preset_name]; return ( p.get("text_color", "#FFFFFF"), p.get("outline_color", "#000000"), p.get("outline_width", 10), p.get("shadow_blur", 5), p.get("add_shadow", True), p.get("add_glow", False), p.get("effect_type", "normal") ); return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(); preset.change( update_from_preset, [preset], [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow, effect_type] ); def add_text(base, layers, next_id, hist, txt, fnt, sz, tcol, ocol, ow, shad, blur, glow, opac, x, y, effect_type): if not base: return layers, next_id, hist, format_layers(layers), None, "❌ Load image first"; if not txt.strip(): return layers, next_id, hist, format_layers(layers), None, "❌ Enter text"; hist = (hist + [copy.deepcopy(layers)])[-20:]; new_layer = TextLayer( next_id, txt, fnt, int(sz), tcol, int(x), int(y), int(ow), ocol, shad, int(blur), glow, int(opac), True, effect_type ); layers = layers + [new_layer]; result = render_all_layers(base, layers); return layers, next_id + 1, hist, format_layers(layers), result, f"✅ Added Layer {next_id} with {effect_type} effect"; add_btn.click( add_text, [base_image_state, layers_state, next_layer_id, history, text_input, font, font_size, text_color, outline_color, outline_w, add_shadow, shadow_blur, add_glow, opacity, x_coord, y_coord, effect_type], [layers_state, next_layer_id, history, layers_list, preview, status] ); def remove_last(base, layers, hist): if not layers: return layers, hist, format_layers(layers), None, "⚠️ No layers"; hist = (hist + [copy.deepcopy(layers)])[-20:]; layers = layers[:-1]; result = render_all_layers(base, layers) if base else None; return layers, hist, format_layers(layers) if layers else "No layers yet", result, "✅ Removed last layer"; remove_last_btn.click( remove_last, [base_image_state, layers_state, history], [layers_state, history, layers_list, preview, status] ); def undo(base, layers, hist): if not hist: return layers, hist, format_layers(layers), None, "⚠️ Nothing to undo"; layers = copy.deepcopy(hist[-1]); hist = hist[:-1]; result = render_all_layers(base, layers) if base else None; return layers, hist, format_layers(layers) if layers else "No layers yet", result, "↩️ Undone"; undo_btn.click( undo, [base_image_state, layers_state, history], [layers_state, history, layers_list, preview, status] ); def clear_all_layers(base): if base: return [], 1, [], "No layers yet", base, "✅ All layers cleared"; return [], 1, [], "No layers yet", None, "⚠️ No image loaded"; clear_all_btn.click( clear_all_layers, [base_image_state], [layers_state, next_layer_id, history, layers_list, preview, status] );
-                    gr.Markdown("---"); gr.Markdown("### 💾 Download Your Image"); with gr.Row(): format_choice = gr.Dropdown(["JPEG (Smaller File)", "PNG (Higher Quality)"], value="JPEG (Smaller File)", label="Choose Format"); prepare_download_btn = gr.Button("🚀 Prepare Download", variant="primary"); with gr.Row(): download_file = gr.File(label="Download Link", interactive=False); download_status = gr.Textbox(label="Status", interactive=False); prepare_download_btn.click( fn=save_image, inputs=[preview, format_choice], outputs=[download_file, download_status] );
+                        with gr.Column():
+                            load_btn = gr.Button("🔄 Load Image from Tab 1", variant="primary", size="lg")
+                            preview = gr.Image(label="Click to position text", type="pil", interactive=True)
+                            with gr.Row():
+                                x_coord = gr.Number(label="X Position", value=100, precision=0)
+                                y_coord = gr.Number(label="Y Position", value=100, precision=0)
+                            status = gr.Textbox(label="Status", interactive=False)
+                        with gr.Column():
+                            text_input = gr.Textbox( label="✍️ Enter Your Text", lines=2, placeholder="Type your text here..." )
+                            preset = gr.Dropdown( ["Custom"] + list(PRESETS.keys()), value="Neon Glow 🌟", label="✨ Quick Effect Presets" )
+                            with gr.Row():
+                                font = gr.Dropdown( list(fonts_available.keys()), value=list(fonts_available.keys())[0], label="Font Style" )
+                                font_size = gr.Slider(20, 300, 80, label="Font Size", step=5)
+                            gr.Markdown("### 🎨 Colors")
+                            with gr.Row():
+                                text_color = gr.ColorPicker( value="#FFFFFF", label="📝 Text Color", interactive=True, elem_id="text_color_picker" )
+                                outline_color = gr.ColorPicker( value="#000000", label="🔲 Outline/Glow Color", interactive=True, elem_id="outline_color_picker" )
+                            with gr.Accordion("⚙️ Advanced Effect Controls", open=True):
+                                effect_type = gr.Dropdown( ["normal", "neon", "chrome", "fire", "3d", "gradient"], value="neon", label="Effect Style" )
+                                outline_w = gr.Slider(0, 30, 3, label="Outline Width", step=1)
+                                with gr.Row():
+                                    add_shadow = gr.Checkbox(label="Add Shadow", value=False)
+                                    add_glow = gr.Checkbox(label="Add Glow", value=True)
+                                shadow_blur = gr.Slider(0, 50, 20, label="Shadow/Glow Blur", step=1)
+                                opacity = gr.Slider(0, 100, 100, label="Text Opacity %", step=5)
+                            add_btn = gr.Button("➕ ADD TEXT TO IMAGE", variant="primary", size="lg")
+                            layers_list = gr.Textbox( label="📝 Text Layers", lines=5, interactive=False, value="No layers yet" )
+                            with gr.Row():
+                                remove_last_btn = gr.Button("🔙 Remove Last", variant="secondary")
+                                undo_btn = gr.Button("↩️ Undo", variant="secondary")
+                                clear_all_btn = gr.Button("🗑️ Clear All", variant="stop")
+                    
+                    # --- Event Handlers for Tab 2 ---
+                    load_btn.click( lambda x: (x, "✅ Image loaded! Click on image to position text") if x else (None, "❌ No image in Tab 1"), [img_display], [preview, status] ).then( lambda x: x, [img_display], [base_image_state] )
+                    def handle_click(evt: gr.SelectData): return evt.index[0], evt.index[1], f"📍 Position set: ({evt.index[0]}, {evt.index[1]})"
+                    preview.select(handle_click, None, [x_coord, y_coord, status])
+                    
+                    def update_from_preset(preset_name):
+                        if preset_name in PRESETS: p = PRESETS[preset_name]; return ( p.get("text_color", "#FFFFFF"), p.get("outline_color", "#000000"), p.get("outline_width", 10), p.get("shadow_blur", 5), p.get("add_shadow", True), p.get("add_glow", False), p.get("effect_type", "normal") );
+                        return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
+                    preset.change( update_from_preset, [preset], [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow, effect_type] )
+                    
+                    def add_text(base, layers, next_id, hist, txt, fnt, sz, tcol, ocol, ow, shad, blur, glow, opac, x, y, effect_type):
+                        if not base: return layers, next_id, hist, format_layers(layers), None, "❌ Load image first";
+                        if not txt.strip(): return layers, next_id, hist, format_layers(layers), None, "❌ Enter text";
+                        hist = (hist + [copy.deepcopy(layers)])[-20:]; new_layer = TextLayer( next_id, txt, fnt, int(sz), tcol, int(x), int(y), int(ow), ocol, shad, int(blur), glow, int(opac), True, effect_type ); layers = layers + [new_layer]; result = render_all_layers(base, layers);
+                        return layers, next_id + 1, hist, format_layers(layers), result, f"✅ Added Layer {next_id} with {effect_type} effect";
+                    add_btn.click( add_text, [base_image_state, layers_state, next_layer_id, history, text_input, font, font_size, text_color, outline_color, outline_w, add_shadow, shadow_blur, add_glow, opacity, x_coord, y_coord, effect_type], [layers_state, next_layer_id, history, layers_list, preview, status] )
+                    
+                    def remove_last(base, layers, hist):
+                        if not layers: return layers, hist, format_layers(layers), None, "⚠️ No layers";
+                        hist = (hist + [copy.deepcopy(layers)])[-20:]; layers = layers[:-1]; result = render_all_layers(base, layers) if base else None;
+                        return layers, hist, format_layers(layers) if layers else "No layers yet", result, "✅ Removed last layer";
+                    remove_last_btn.click( remove_last, [base_image_state, layers_state, history], [layers_state, history, layers_list, preview, status] )
+                    
+                    def undo(base, layers, hist):
+                        if not hist: return layers, hist, format_layers(layers), None, "⚠️ Nothing to undo";
+                        layers = copy.deepcopy(hist[-1]); hist = hist[:-1]; result = render_all_layers(base, layers) if base else None;
+                        return layers, hist, format_layers(layers) if layers else "No layers yet", result, "↩️ Undone";
+                    undo_btn.click( undo, [base_image_state, layers_state, history], [layers_state, history, layers_list, preview, status] )
+                    
+                    def clear_all_layers(base):
+                        if base: return [], 1, [], "No layers yet", base, "✅ All layers cleared";
+                        return [], 1, [], "No layers yet", None, "⚠️ No image loaded";
+                    clear_all_btn.click( clear_all_layers, [base_image_state], [layers_state, next_layer_id, history, layers_list, preview, status] )
+                    
+                    gr.Markdown("---"); gr.Markdown("### 💾 Download Your Image");
+                    with gr.Row():
+                        format_choice = gr.Dropdown(["JPEG (Smaller File)", "PNG (Higher Quality)"], value="JPEG (Smaller File)", label="Choose Format")
+                        prepare_download_btn = gr.Button("🚀 Prepare Download", variant="primary")
+                    with gr.Row():
+                        download_file = gr.File(label="Download Link", interactive=False)
+                        download_status = gr.Textbox(label="Status", interactive=False)
+                    prepare_download_btn.click( fn=save_image, inputs=[preview, format_choice], outputs=[download_file, download_status] )
 
                 # TAB 3 - UPGRADE
                 with gr.Tab("💎 Upgrade"):
-                   # ... (Remains the same) ...
-                   gr.Markdown(""" ... Pricing Plans ... """)
+                   gr.Markdown(""" ... Pricing Plans ... """) # Minified
 
                 # --- TAB 4 - SOCIAL POST CREATOR ---
                 with gr.Tab("📢 Social Post Creator"):
@@ -838,27 +923,49 @@ def create_interface():
                     social_post_base_image = gr.State(None); social_layers_state = gr.State([]); social_next_layer_id = gr.State(1); social_history = gr.State([]); logo_image_state = gr.State(None); social_effect_type_state = gr.State("normal");
                     with gr.Row():
                         with gr.Column(scale=1):
-                            gr.Markdown("### 1. Setup"); post_size_dd = gr.Dropdown(list(post_sizes.keys()), label="Select Post Size", value="Instagram Square (1:1)");
-                            bg_color_picker = gr.ColorPicker(value="#FFFFFF", label="Background Color", interactive=True, elem_id="social_bg_color_picker"); # <-- FIXED with elem_id
-                            create_canvas_btn = gr.Button("Set Background & Size", variant="secondary");
-                            gr.Markdown("### 2. Add Elements"); gr.Markdown("#### Text");
-                            social_preset_dd = gr.Dropdown( ["Custom"] + list(PRESETS.keys()), value="Bold & Readable", label="✨ Text Effect Preset" );
-                            heading_text = gr.Textbox(label="Heading Text", placeholder="Your Catchy Title..."); paragraph_text = gr.Textbox(label="Paragraph Text", placeholder="Add more details here...", lines=3);
-                            text_font_dd = gr.Dropdown(list(fonts_available.keys()), label="Font Style", value=list(fonts_available.keys())[0]);
-                            text_color_picker = gr.ColorPicker(label="Text Color", value="#000000", interactive=True, elem_id="social_text_color_picker"); # <-- FIXED with elem_id
-                            text_alignment_radio = gr.Radio(["Left", "Center", "Right"], label="Paragraph Alignment", value="Left");
-                            add_heading_btn = gr.Button("➕ Add Heading"); add_paragraph_btn = gr.Button("➕ Add Paragraph");
-                            gr.Markdown("#### Logo (Optional)"); logo_upload_img = gr.Image(label="Upload Logo (PNG Recommended)", type="pil", height=100);
-                            logo_size_radio = gr.Radio(["Small (50px)", "Medium (100px)", "Large (150px)"], label="Logo Size", value="Medium (100px)");
-                            gr.Markdown("*(Click preview image to position logo)*"); with gr.Row(): logo_x_num = gr.Number(label="Logo X", value=50, interactive=False); logo_y_num = gr.Number(label="Logo Y", value=50, interactive=False);
-                            add_logo_btn = gr.Button("➕ Add/Update Logo");
+                            gr.Markdown("### 1. Setup")
+                            post_size_dd = gr.Dropdown(list(post_sizes.keys()), label="Select Post Size", value="Instagram Square (1:1)")
+                            bg_color_picker = gr.ColorPicker(value="#FFFFFF", label="Background Color", interactive=True, elem_id="social_bg_color_picker") # <-- FIXED with elem_id
+                            create_canvas_btn = gr.Button("Set Background & Size", variant="secondary")
+                            
+                            gr.Markdown("### 2. Add Elements")
+                            gr.Markdown("#### Text")
+                            social_preset_dd = gr.Dropdown( ["Custom"] + list(PRESETS.keys()), value="Bold & Readable", label="✨ Text Effect Preset" )
+                            heading_text = gr.Textbox(label="Heading Text", placeholder="Your Catchy Title...")
+                            paragraph_text = gr.Textbox(label="Paragraph Text", placeholder="Add more details here...", lines=3)
+                            text_font_dd = gr.Dropdown(list(fonts_available.keys()), label="Font Style", value=list(fonts_available.keys())[0])
+                            text_color_picker = gr.ColorPicker(label="Text Color", value="#000000", interactive=True, elem_id="social_text_color_picker") # <-- FIXED with elem_id
+                            text_alignment_radio = gr.Radio(["Left", "Center", "Right"], label="Paragraph Alignment", value="Left")
+                            add_heading_btn = gr.Button("➕ Add Heading")
+                            add_paragraph_btn = gr.Button("➕ Add Paragraph")
+                            
+                            gr.Markdown("#### Logo (Optional)")
+                            logo_upload_img = gr.Image(label="Upload Logo (PNG Recommended)", type="pil", height=100)
+                            logo_size_radio = gr.Radio(["Small (50px)", "Medium (100px)", "Large (150px)"], label="Logo Size", value="Medium (100px)")
+                            gr.Markdown("*(Click preview image to position logo)*")
+                            with gr.Row():
+                                logo_x_num = gr.Number(label="Logo X", value=50, interactive=False)
+                                logo_y_num = gr.Number(label="Logo Y", value=50, interactive=False)
+                            add_logo_btn = gr.Button("➕ Add/Update Logo")
+                            
                         with gr.Column(scale=2):
-                            gr.Markdown("### Preview (Click Logo Position Here)"); post_preview_img = gr.Image(label="Post Preview", interactive=True); post_status_text = gr.Textbox(label="Status", interactive=False);
-                            social_layers_list = gr.Textbox(label="📝 Elements", lines=5, interactive=False, value="No elements added yet");
-                            with gr.Row(): social_remove_last_btn = gr.Button("🔙 Remove Last Element", variant="secondary"); social_clear_all_btn = gr.Button("🗑️ Clear All Elements", variant="stop");
-                            gr.Markdown("---"); gr.Markdown("### 💾 Download Your Post");
-                            with gr.Row(): social_format_choice = gr.Dropdown(["JPEG (Smaller File)", "PNG (Higher Quality)"], value="JPEG (Smaller File)", label="Choose Format"); social_prepare_download_btn = gr.Button("Prepare Download", variant="secondary");
-                            with gr.Row(): social_download_file = gr.File(label="Download Link", interactive=False); social_download_status = gr.Textbox(label="Status", interactive=False);
+                            gr.Markdown("### Preview (Click Logo Position Here)")
+                            post_preview_img = gr.Image(label="Post Preview", interactive=True)
+                            post_status_text = gr.Textbox(label="Status", interactive=False)
+                            social_layers_list = gr.Textbox(label="📝 Elements", lines=5, interactive=False, value="No elements added yet")
+                            with gr.Row():
+                                social_remove_last_btn = gr.Button("🔙 Remove Last Element", variant="secondary")
+                                social_clear_all_btn = gr.Button("🗑️ Clear All Elements", variant="stop")
+                            
+                            gr.Markdown("---")
+                            gr.Markdown("### 💾 Download Your Post")
+                            with gr.Row():
+                                social_format_choice = gr.Dropdown(["JPEG (Smaller File)", "PNG (Higher Quality)"], value="JPEG (Smaller File)", label="Choose Format")
+                                social_prepare_download_btn = gr.Button("Prepare Download", variant="secondary")
+                            with gr.Row():
+                                social_download_file = gr.File(label="Download Link", interactive=False)
+                                social_download_status = gr.Textbox(label="Status", interactive=False)
+                    
                     # --- Event Handlers for Social Post Tab ---
                     def store_logo(img): print("Logo uploaded and stored in state."); return img;
                     logo_upload_img.upload(store_logo, inputs=[logo_upload_img], outputs=[logo_image_state]);
@@ -922,28 +1029,114 @@ def create_interface():
 
         # --- UPDATED FEATURES SECTION with SINHALA TRANSLATIONS ---
         with gr.Row(elem_id="features_section"):
-             # ... (Features Markdown remains the same) ...
-             gr.Markdown(""" ... Features ... """)
+             gr.Markdown("""
+             ---
+             ### ✨ Features (විශේෂාංග)
+             - 🆓 මාසිකව නොමිලේ AI උත්පාදන 5ක් (5 FREE AI generations per month)
+             - 📤 අසීමිත උඩුගත කිරීම් (නොමිලේ!) (Unlimited uploads FREE!)
+             - ✍️ අසීමිත පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
+             - 🎨 නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
+             - 🔄 මාසිකව ස්වයංක්‍රීයව යළි පිහිටුවේ (Auto-resets monthly)
+             """)
 
         # --- FOOTER SECTION ---
         gr.Markdown("---") # Add a separator line
         with gr.Row(elem_id="footer"):
-            # ... (Footer code remains the same) ...
-            with gr.Column(scale=1, min_width=160): gr.Image( value="logo.JPG", show_label=False, height=50, container=False, show_download_button=False );
-            with gr.Column(scale=3): terms_url = "https.www.google.com"; privacy_url = "https.www.google.com"; about_url = "https://lankaainexus.com/about-us/"; gr.Markdown(f"""<div style="text-align: right; font-size: 0.9em; color: grey; line-height: 1.6;"> © {datetime.now().year} Lanka AI Nexus (Powered by Doctor On Care Pvt Ltd). All rights reserved. <br> <a href="{about_url}" target="_blank" style="color: grey; text-decoration: none;">About Us</a> | <a href="{terms_url}" target="_blank" style="color: grey; text-decoration: none;">Terms & Conditions</a> | <a href="{privacy_url}" target="_blank" style="color: grey; text-decoration: none;">Privacy Policy</a> </div>""");
+            with gr.Column(scale=1, min_width=160):
+                gr.Image(
+                    value="logo.JPG", # <-- CORRECTED FILENAME CASE
+                    show_label=False,
+                    height=50,
+                    container=False,
+                    show_download_button=False
+                )
+            with gr.Column(scale=3):
+                terms_url = "https://lankaainexus.com/terms-and-conditions"
+                privacy_url = "https://lankaainexus.com/privacy-policy"
+                about_url = "https://lankaainexus.com/about-us/"
+                gr.Markdown(f"""
+                <div style="text-align: right; font-size: 0.9em; color: grey; line-height: 1.6;">
+                    © {datetime.now().year} Lanka AI Nexus (Powered by Doctor On Care Pvt Ltd). All rights reserved. <br>
+                    <a href="{about_url}" target="_blank" style="color: grey; text-decoration: none;">About Us</a> |
+                    <a href="{terms_url}" target="_blank" style="color: grey; text-decoration: none;">Terms & Conditions</a> |
+                    <a href="{privacy_url}" target="_blank" style="color: grey; text-decoration: none;">Privacy Policy</a>
+                </div>
+                """)
 
 
         # EVENT HANDLERS (Login/Register/Logout/Generate/Upload)
-        # ... (These remain the same - corrected versions) ...
-        def handle_register(email, pwd, pwd2): if pwd != pwd2: return None, "❌ Passwords don't match", gr.update(), gr.update(), gr.update(), gr.update(); success, msg = register_user(email, pwd); return None, msg, gr.update(), gr.update(), gr.update(), gr.update();
-        reg_btn.click( handle_register, [reg_email, reg_password, reg_password2], [user_state, reg_msg, auth_section, main_app, login_msg, stats_display] );
-        def handle_login(email, pwd): success, msg, user_info = login_user(email, pwd); if success: stats = get_user_stats(user_info['id']); return ( user_info, f"**Status:** ✅ {email}", stats, gr.update(visible=False), gr.update(visible=True), msg ); return None, "**Status:** Not logged in", "", gr.update(visible=True), gr.update(visible=False), msg ;
-        login_btn.click( handle_login, [login_email, login_password], [user_state, login_status, stats_display, auth_section, main_app, login_msg] );
-        def handle_logout(): return ( None, "**Status:** Logged out", "", gr.update(visible=True), gr.update(visible=False), "👋 Logged out" );
-        logout_btn.click( handle_logout, None, [user_state, login_status, stats_display, auth_section, main_app, login_msg] );
-        upload_btn.click( process_uploaded_image, [upload_img], [img_display, img_status] );
-        def gen_and_update_stats(prompt, size, user_info): img, msg = generate_image_with_auth(prompt, size, user_info); if user_info: stats = get_user_stats(user_info['id']); return img, msg, stats; return img, msg, "";
-        gen_btn.click( gen_and_update_stats, [prompt, size, user_state], [img_display, img_status, stats_display] );
+        
+        # Register
+        def handle_register(email, pwd, pwd2):
+            if pwd != pwd2:
+                return None, "❌ Passwords don't match", gr.update(), gr.update(), gr.update(), gr.update()
+            success, msg = register_user(email, pwd)
+            return None, msg, gr.update(), gr.update(), gr.update(), gr.update()
+
+        reg_btn.click(
+            handle_register,
+            [reg_email, reg_password, reg_password2],
+            [user_state, reg_msg, auth_section, main_app, login_msg, stats_display]
+        )
+
+        # Login
+        def handle_login(email, pwd):
+            success, msg, user_info = login_user(email, pwd)
+            if success:
+                stats = get_user_stats(user_info['id'])
+                return (
+                    user_info,
+                    f"**Status:** ✅ {email}",
+                    stats,
+                    gr.update(visible=False), # auth_section
+                    gr.update(visible=True),  # main_app
+                    msg                      # login_msg
+                )
+            return None, "**Status:** Not logged in", "", gr.update(visible=True), gr.update(visible=False), msg
+
+        login_btn.click(
+            handle_login,
+            [login_email, login_password],
+            [user_state, login_status, stats_display, auth_section, main_app, login_msg]
+        )
+
+        # Logout
+        def handle_logout():
+            return (
+                None,
+                "**Status:** Logged out",
+                "",                       # stats_display placeholder
+                gr.update(visible=True),  # auth_section
+                gr.update(visible=False), # main_app
+                "👋 Logged out"            # login_msg placeholder
+            )
+
+        logout_btn.click(
+            handle_logout,
+            None,
+            [user_state, login_status, stats_display, auth_section, main_app, login_msg]
+        )
+
+        # Upload (Tab 1)
+        upload_btn.click(
+            process_uploaded_image,
+            [upload_img],
+            [img_display, img_status]
+        )
+
+        # Generate (Tab 1)
+        def gen_and_update_stats(prompt, size, user_info):
+            img, msg = generate_image_with_auth(prompt, size, user_info)
+            if user_info:
+                stats = get_user_stats(user_info['id'])
+                return img, msg, stats
+            return img, msg, ""
+
+        gen_btn.click(
+            gen_and_update_stats,
+            [prompt, size, user_state],
+            [img_display, img_status, stats_display]
+        )
 
     return demo # Return demo should be the last line in create_interface
 
@@ -952,13 +1145,36 @@ def create_interface():
 # ============================================
 
 if __name__ == "__main__":
-    # ... (Startup checks remain the same) ...
-    print("=" * 50); print("🚀 Advanced Text Creator Pro - With Effects Studio"); print("=" * 50);
-    if DATABASE_URL: print("✅ DATABASE_URL configured"); else: print("❌ DATABASE_URL not found!");
-    if REPLICATE_API_TOKEN: print("✅ REPLICATE_API_TOKEN configured"); else: print("⚠️  REPLICATE_API_TOKEN not found (AI generation disabled)");
-    if PSYCOPG2_AVAILABLE: print("✅ psycopg2 available"); conn = get_db_connection(); if conn: print("✅ Database: Connected"); conn.close(); else: print("❌ Database: Connection failed");
-    else: print("❌ psycopg2 not available");
-    print("=" * 50); print(f"🔐 Admin Password is set: {'Yes' if ADMIN_PASSWORD else 'No'}"); print("⚠️  Remember to change the admin password!"); print("=" * 50);
+    print("=" * 50)
+    print("🚀 Advanced Text Creator Pro - With Effects Studio")
+    print("=" * 50)
+
+    # Check configuration
+    if DATABASE_URL:
+        print("✅ DATABASE_URL configured")
+    else:
+        print("❌ DATABASE_URL not found!")
+
+    if REPLICATE_API_TOKEN:
+        print("✅ REPLICATE_API_TOKEN configured")
+    else:
+        print("⚠️  REPLICATE_API_TOKEN not found (AI generation disabled)")
+
+    if PSYCOPG2_AVAILABLE:
+        print("✅ psycopg2 available")
+        conn = get_db_connection()
+        if conn:
+            print("✅ Database: Connected")
+            conn.close()
+        else:
+            print("❌ Database: Connection failed")
+    else:
+        print("❌ psycopg2 not available")
+
+    print("=" * 50)
+    print(f"🔐 Admin Password is set: {'Yes' if ADMIN_PASSWORD else 'No'}")
+    print("⚠️  Remember to change the admin password!")
+    print("=" * 50)
 
     demo = create_interface()
     # Updated port to 8001
