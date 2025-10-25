@@ -1351,111 +1351,108 @@ def create_interface():
                     )
                     # --- END NEW DOWNLOAD SECTION ---
 
-                # TAB 3 - UPGRADE / SOCIAL POST CREATOR
-                with gr.Tab("💎 Upgrade / Social Post") as upgrade_tab:
+                # TAB 3 - UPGRADE
+                with gr.Tab("💎 Upgrade"):
+                    gr.Markdown("""
+                    ## 💰 Pricing Plans
 
-                    # --- Section 1: Pricing Info (Visible to 'free' users) ---
-                    with gr.Column(visible=True) as pricing_info_ui: # Start visible
-                         gr.Markdown("""
-                         ## 💰 Upgrade Your Plan
-                         Unlock the Social Post Creator and get more AI generations!
+                    ### 🆓 FREE (Current Plan)
+                    - 5 AI generations per month
+                    - Unlimited uploads & text effects
+                    - **Social Post Creator: Locked** 🔒
 
-                         ### 🆓 FREE (Current Plan)
-                         - 5 AI generations per month
-                         - Unlimited uploads & text effects
-                         - **Social Post Creator: Locked** 🔒
+                    ### ⭐ Starter - LKR 299/month
+                    - 25 AI generations per month
+                    - **Social Post Creator: Unlocked** ✨
+                    - [Upgrade Now Link - Replace with Payhere Link Later](#)
 
-                         ### ⭐ Starter - LKR 299/month
-                         - 25 AI generations per month
-                         - **Social Post Creator: Unlocked** ✨
-                         - [Upgrade Now Link - Replace with Payhere Link Later](#)
+                    ### 🔥 Popular - LKR 549/month
+                    - 60 AI generations per month
+                    - **Social Post Creator: Unlocked** ✨
+                    - [Upgrade Now Link - Replace with Payhere Link Later](#)
 
-                         ### 🔥 Popular - LKR 549/month
-                         - 60 AI generations per month
-                         - **Social Post Creator: Unlocked** ✨
-                         - [Upgrade Now Link - Replace with Payhere Link Later](#)
+                    ### 🚀 Premium - LKR 1,490/month
+                    - 200 AI generations per month
+                    - Priority support
+                    - **Social Post Creator: Unlocked** ✨
+                    - [Upgrade Now Link - Replace with Payhere Link Later](#)
+                    """)
+                    # Add Payhere integration details/links here later
 
-                         ### 🚀 Premium - LKR 1,490/month
-                         - 200 AI generations per month
-                         - Priority support
-                         - **Social Post Creator: Unlocked** ✨
-                         - [Upgrade Now Link - Replace with Payhere Link Later](#)
-                         """)
-                         # Add Payhere integration details/links here later
+                # TAB 4 - SOCIAL POST CREATOR (NOW VISIBLE TO ALL FOR TESTING)
+                with gr.Tab("📢 Social Post Creator"):
+                    gr.Markdown("## 🖼️ Create Simple Social Media Posts")
 
-                    # --- Section 2: Social Post Creator (Visible to upgraded users) ---
-                    with gr.Column(visible=False) as social_post_ui: # Start hidden
-                        gr.Markdown("## 📢 Social Post Creator")
-                        # State variables for this section (needed within the UI definition)
-                        social_post_image = gr.State(None)
-                        logo_image = gr.State(None)
-                        logo_x = gr.State(50) # Default logo X
-                        logo_y = gr.State(50) # Default logo Y
+                    # State variables for this tab
+                    social_post_image = gr.State(None)
+                    logo_image = gr.State(None)
+                    logo_x = gr.State(50) # Default logo X
+                    logo_y = gr.State(50) # Default logo Y
 
-                        with gr.Row():
-                            # --- Column 1: Controls ---
-                            with gr.Column(scale=1):
-                                gr.Markdown("### 1. Setup")
-                                post_size_dd = gr.Dropdown(list(post_sizes.keys()), label="Select Post Size", value="Instagram Square (1:1)")
-                                bg_color_picker = gr.ColorPicker(label="Background Color", value="#FFFFFF")
+                    with gr.Row():
+                        # --- Column 1: Controls ---
+                        with gr.Column(scale=1):
+                            gr.Markdown("### 1. Setup")
+                            post_size_dd = gr.Dropdown(list(post_sizes.keys()), label="Select Post Size", value="Instagram Square (1:1)")
+                            bg_color_picker = gr.ColorPicker(label="Background Color", value="#FFFFFF")
 
-                                gr.Markdown("### 2. Text Content")
-                                heading_text = gr.Textbox(label="Heading Text", placeholder="Your Catchy Title...")
-                                paragraph_text = gr.Textbox(label="Paragraph Text", placeholder="Add more details here...", lines=4)
-                                text_font_dd = gr.Dropdown(list(fonts_available.keys()), label="Font Style", value=list(fonts_available.keys())[0])
-                                text_color_picker = gr.ColorPicker(label="Text Color", value="#000000")
+                            gr.Markdown("### 2. Text Content")
+                            heading_text = gr.Textbox(label="Heading Text", placeholder="Your Catchy Title...")
+                            paragraph_text = gr.Textbox(label="Paragraph Text", placeholder="Add more details here...", lines=4)
+                            text_font_dd = gr.Dropdown(list(fonts_available.keys()), label="Font Style", value=list(fonts_available.keys())[0])
+                            text_color_picker = gr.ColorPicker(label="Text Color", value="#000000")
 
-                                gr.Markdown("### 3. Add Logo (Optional)")
-                                logo_upload_img = gr.Image(label="Upload Logo (PNG Recommended)", type="pil", height=100)
-                                logo_size_radio = gr.Radio(["Small (50px)", "Medium (100px)", "Large (150px)"], label="Logo Size", value="Medium (100px)")
-                                gr.Markdown("*(Click preview image to position logo)*")
-                                with gr.Row():
-                                    logo_x_num = gr.Number(label="Logo X", value=50, interactive=False)
-                                    logo_y_num = gr.Number(label="Logo Y", value=50, interactive=False)
+                            gr.Markdown("### 3. Add Logo (Optional)")
+                            logo_upload_img = gr.Image(label="Upload Logo (PNG Recommended)", type="pil", height=100)
+                            logo_size_radio = gr.Radio(["Small (50px)", "Medium (100px)", "Large (150px)"], label="Logo Size", value="Medium (100px)")
+                            gr.Markdown("*(Click preview image to position logo)*")
+                            with gr.Row():
+                                logo_x_num = gr.Number(label="Logo X", value=50, interactive=False)
+                                logo_y_num = gr.Number(label="Logo Y", value=50, interactive=False)
 
-                                generate_post_btn = gr.Button("🚀 Generate Post Preview", variant="primary", size="lg")
+                            generate_post_btn = gr.Button("🚀 Generate Post Preview", variant="primary", size="lg")
 
-                            # --- Column 2: Preview & Download ---
-                            with gr.Column(scale=2):
-                                gr.Markdown("### Preview (Click Logo Position Here)")
-                                post_preview_img = gr.Image(label="Post Preview", interactive=True) # Clickable for logo position
-                                post_status_text = gr.Textbox(label="Status", interactive=False)
+                        # --- Column 2: Preview & Download ---
+                        with gr.Column(scale=2):
+                            gr.Markdown("### Preview (Click Logo Position Here)")
+                            post_preview_img = gr.Image(label="Post Preview", interactive=True) # Clickable for logo position
+                            post_status_text = gr.Textbox(label="Status", interactive=False)
 
-                                # --- Download Section for Social Post ---
-                                gr.Markdown("---")
-                                gr.Markdown("### 💾 Download Your Post")
-                                with gr.Row():
-                                    social_format_choice = gr.Dropdown(["JPEG (Smaller File)", "PNG (Higher Quality)"], value="JPEG (Smaller File)", label="Choose Format")
-                                    social_prepare_download_btn = gr.Button("Prepare Download", variant="secondary")
-                                with gr.Row():
-                                    social_download_file = gr.File(label="Download Link", interactive=False)
-                                    social_download_status = gr.Textbox(label="Status", interactive=False)
+                            # --- Download Section for Social Post ---
+                            gr.Markdown("---")
+                            gr.Markdown("### 💾 Download Your Post")
+                            with gr.Row():
+                                social_format_choice = gr.Dropdown(["JPEG (Smaller File)", "PNG (Higher Quality)"], value="JPEG (Smaller File)", label="Choose Format")
+                                social_prepare_download_btn = gr.Button("Prepare Download", variant="secondary")
+                            with gr.Row():
+                                social_download_file = gr.File(label="Download Link", interactive=False)
+                                social_download_status = gr.Textbox(label="Status", interactive=False)
 
-                        # --- Event Handlers specific to Social Post Creator ---
-                        def store_logo(img): return img
-                        logo_upload_img.upload(store_logo, inputs=[logo_upload_img], outputs=[logo_image])
+                    # --- Event Handlers for Social Post Tab ---
+                    def store_logo(img): return img
+                    logo_upload_img.upload(store_logo, inputs=[logo_upload_img], outputs=[logo_image])
 
-                        def set_logo_pos(evt: gr.SelectData): return evt.index[0], evt.index[1]
-                        post_preview_img.select(set_logo_pos, inputs=None, outputs=[logo_x_num, logo_y_num])
+                    def set_logo_pos(evt: gr.SelectData): return evt.index[0], evt.index[1]
+                    post_preview_img.select(set_logo_pos, inputs=None, outputs=[logo_x_num, logo_y_num])
 
-                        generate_post_btn.click(
-                            fn=generate_social_post,
-                            inputs=[
-                                post_size_dd, bg_color_picker,
-                                heading_text, paragraph_text, text_font_dd, text_color_picker,
-                                logo_image, logo_size_radio, logo_x_num, logo_y_num
-                            ],
-                            outputs=[post_preview_img, post_status_text]
-                        )
+                    generate_post_btn.click(
+                        fn=generate_social_post,
+                        inputs=[
+                            post_size_dd, bg_color_picker,
+                            heading_text, paragraph_text, text_font_dd, text_color_picker,
+                            logo_image, logo_size_radio, logo_x_num, logo_y_num
+                        ],
+                        outputs=[post_preview_img, post_status_text]
+                    )
 
-                        social_prepare_download_btn.click(
-                            fn=save_image,
-                            inputs=[post_preview_img, social_format_choice],
-                            outputs=[social_download_file, social_download_status]
-                        )
+                    social_prepare_download_btn.click(
+                        fn=save_image,
+                        inputs=[post_preview_img, social_format_choice],
+                        outputs=[social_download_file, social_download_status]
+                    )
+                # --- END SOCIAL POST TAB ---
 
-
-                # TAB 4 - ADMIN
+                # TAB 5 - ADMIN (Now after Social Post Tab)
                 with gr.Tab("🔐 Admin"):
                     # ... (Your existing Admin tab content) ...
                     gr.Markdown("## 🔐 Admin Dashboard")
@@ -1606,63 +1603,48 @@ def create_interface():
             if pwd != pwd2:
                 return None, "❌ Passwords don't match", gr.update(), gr.update()
             success, msg = register_user(email, pwd)
-            # Make sure return matches expected outputs for login_btn click (even though reg_btn triggers this)
-            return None, msg, gr.update(), gr.update() # Matches number of outputs for login_btn
+            return None, msg, gr.update(), gr.update()
 
         reg_btn.click(
             handle_register,
             [reg_email, reg_password, reg_password2],
-            [user_state, reg_msg, auth_section, main_app] # Assumes reg_btn has same outputs as login_btn initially
+            [user_state, reg_msg, auth_section, main_app]
         )
 
-        # Login
+        # Login (Simplified for testing - Social Post tab always visible)
         def handle_login(email, pwd):
             success, msg, user_info = login_user(email, pwd)
             if success:
                 stats = get_user_stats(user_info['id'])
-                # --- ADDED LOGIC TO SHOW/HIDE UI BASED ON PLAN ---
-                is_upgraded = (user_info['plan'] != 'free')
-                pricing_ui_visibility = gr.update(visible=not is_upgraded) # Hide pricing if upgraded
-                social_ui_visibility = gr.update(visible=is_upgraded) # Show creator if upgraded
-                # --- END ADDED LOGIC ---
                 return (
                     user_info,
                     f"**Status:** ✅ {email}",
                     stats,
                     gr.update(visible=False), # auth_section
-                    gr.update(visible=True),  # main_app
-                    msg,
-                    pricing_ui_visibility, # <-- ADDED RETURN
-                    social_ui_visibility   # <-- ADDED RETURN
+                    gr.update(visible=True)  # main_app
                 )
-            # Return hidden states on login failure
-            return None, "**Status:** Not logged in", "", gr.update(), gr.update(), msg, gr.update(visible=True), gr.update(visible=False) # <-- ADDED RETURNS
+            return None, "**Status:** Not logged in", "", gr.update(), gr.update()
 
         login_btn.click(
             handle_login,
             [login_email, login_password],
-            # --- ADDED OUTPUTS for conditional UI ---
-            [user_state, login_status, stats_display, auth_section, main_app, login_msg, pricing_info_ui, social_post_ui]
+            [user_state, login_status, stats_display, auth_section, main_app, login_msg] # Removed UI visibility outputs
         )
 
-        # Logout
+        # Logout (Simplified for testing)
         def handle_logout():
             return (
                 None,
                 "**Status:** Logged out",
                 "",
                 gr.update(visible=True),  # auth_section
-                gr.update(visible=False), # main_app
-                "👋 Logged out",
-                gr.update(visible=True), # <-- Show pricing UI on logout
-                gr.update(visible=False) # <-- Hide social post UI on logout
+                gr.update(visible=False) # main_app
             )
 
         logout_btn.click(
             handle_logout,
             None,
-             # --- ADDED OUTPUTS for conditional UI ---
-            [user_state, login_status, stats_display, auth_section, main_app, login_msg, pricing_info_ui, social_post_ui]
+            [user_state, login_status, stats_display, auth_section, main_app, login_msg] # Removed UI visibility outputs
         )
 
         # Upload
@@ -1727,4 +1709,4 @@ if __name__ == "__main__":
 
     demo = create_interface()
     # Updated port to 8001
-    demo.launch(server_name="0.0.0.0", server_port=8000) # <-- CORRECTED PORT
+    demo.launch(server_name="0.0.0.0", server_port=8000)
