@@ -557,9 +557,16 @@ def render_all_layers(base_image, layers: List[TextLayer]):
 
 
 # --- RENDERER FOR TAB 4 (SOCIAL POST) ---
+# --- MOVED post_sizes dictionary TO GLOBAL SCOPE ---
+post_sizes = {
+    "Instagram Square (1:1)": (1080, 1080),
+    "Instagram Story (9:16)": (1080, 1920),
+    "Facebook Post (1.91:1)": (1200, 630),
+    "Twitter Post (16:9)": (1600, 900)
+}
+
 def render_social_post(size_key, bg_color, social_layers: List[SocialLayer]):
     """Renders the social post based on background and layers state"""
-    # --- CORRECTED try block ---
     try:
         width, height = post_sizes[size_key]
         print(f"Rendering social post with bg_color: {bg_color}, type: {type(bg_color)}")
@@ -734,7 +741,141 @@ def create_interface():
         user_state = gr.State(None)
 
         # --- UPDATED INTRO HTML ---
-        gr.HTML(""" ... Intro HTML and CSS ... """) # Minified
+        gr.HTML("""
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&family=Noto+Sans+Sinhala:wght@400;700;800&display=swap" rel="stylesheet">
+        <style>
+            .hero-container {
+                padding: 60px 30px;
+                background: linear-gradient(120deg, #5f72bd 0%, #a4508b 100%); /* New gradient */
+                border-radius: 25px; /* Softer radius */
+                margin-bottom: 40px;
+                text-align: center;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                font-family: 'Poppins', sans-serif;
+                overflow: hidden; /* Prevent potential overflows */
+                position: relative; /* For pseudo-elements if needed later */
+            }
+            .hero-title {
+                font-size: 60px; /* Slightly larger */
+                font-weight: 800; /* Extra bold */
+                color: white;
+                margin-bottom: 15px;
+                text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+                letter-spacing: 0.5px;
+            }
+            .hero-subtitle {
+                font-size: 20px;
+                font-weight: 300;
+                color: #e0e7ff;
+                margin-bottom: 45px;
+                letter-spacing: 3px;
+                text-transform: uppercase; /* Uppercase for style */
+                opacity: 0.85;
+            }
+            .content-wrapper {
+                max-width: 900px; /* Slightly narrower */
+                margin: 0 auto 40px auto;
+                background: rgba(255, 255, 255, 1); /* Fully opaque */
+                border-radius: 20px;
+                padding: 40px 50px;
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            }
+            .lang-box {
+                padding: 30px;
+                border-radius: 15px;
+                margin-bottom: 25px;
+                border-left: 5px solid;
+                text-align: left;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            .lang-box:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            }
+            .lang-box h3 {
+                font-size: 26px;
+                font-weight: 700;
+                margin: 0 0 15px 0;
+                font-family: 'Noto Sans Sinhala', 'Poppins', sans-serif;
+            }
+            .lang-box p {
+                font-size: 17px;
+                line-height: 1.7;
+                margin: 0;
+                font-family: 'Noto Sans Sinhala', 'Poppins', sans-serif;
+            }
+            .sinhala-box {
+                background: #fff9e6; /* Soft yellow */
+                border-color: #764ba2;
+                color: #444;
+            }
+            .sinhala-box h3 { color: #5a3e75; }
+
+            .english-box {
+                background: #eef2ff; /* Soft blue */
+                border-color: #ffc872; /* Match Sinhala border accent */
+                color: #444;
+                margin-bottom: 0;
+            }
+             .english-box h3 { color: #506aac; }
+
+            .features-grid {
+                display: flex; /* Use flexbox */
+                flex-wrap: wrap; /* Allow wrapping */
+                justify-content: center; /* Center items */
+                gap: 15px; /* Space between tags */
+                margin-top: 30px; /* Space above tags */
+            }
+            .feature-pill {
+                background: rgba(255, 255, 255, 0.15);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: white;
+                padding: 12px 25px;
+                border-radius: 50px; /* Pill shape */
+                font-size: 15px;
+                font-weight: 500; /* Medium weight */
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                transition: all 0.25s ease-out;
+                cursor: default; /* Indicate non-clickable */
+            }
+            .feature-pill:hover {
+                background: rgba(255, 255, 255, 0.25);
+                transform: translateY(-3px) scale(1.03);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            }
+        </style>
+
+        <div class="hero-container">
+            <h1 class="hero-title">🌟 AkuruAI – අකුරුAI 🌟</h1>
+            <p class="hero-subtitle">Powered by Lanka AI Nexus</p>
+
+            <div class="content-wrapper">
+                <div class="lang-box sinhala-box">
+                    <h3>🇱🇰 සිංහල</h3>
+                    <p>
+                        <strong>AkuruAI (අකුරුAI)</strong> යනු ශ්‍රී ලංකාවේ ප්‍රථම සිංහල AI නිර්මාණාත්මක මෙවලමයි.
+                        මෙය භාවිතයෙන් ඔබට AI පින්තූර නිර්මාණය කර, ඒවාට සිංහල අකුරු යොදා, සජීවීකරණ ප්‍රයෝග එක් කළ හැකිය.
+                    </p>
+                </div>
+                <div class="lang-box english-box">
+                    <h3>🌍 English</h3>
+                    <p>
+                        <strong>AkuruAI</strong> is Sri Lanka's first Sinhala AI creative tool that brings artificial intelligence, language, and art together.
+                        With AkuruAI, you can instantly create stunning AI-generated images, add Sinhala text, and animate them with smart effects — all in one place.
+                    </p>
+                </div>
+            </div>
+
+            <div class="features-grid">
+                <span class="feature-pill">✨ AI Image Generation</span>
+                <span class="feature-pill">✍️ Sinhala Typography</span>
+                <span class="feature-pill">🎨 Smart Effects</span>
+                <span class="feature-pill">🆓 Free to Start</span>
+            </div>
+        </div>
+        """)
+        # --- END INTRO HTML ---
 
         with gr.Row():
             login_status = gr.Markdown("**Status:** Not logged in", elem_id="login_status_md")
@@ -744,7 +885,6 @@ def create_interface():
             with gr.Row(equal_height=True):
                 with gr.Column(scale=1):
                     gr.Markdown("## 🔐 Login or Register")
-                    # --- CORRECTED INDENTATION ---
                     with gr.Tabs():
                         with gr.Tab("Login"):
                             login_email = gr.Textbox(label="Email", placeholder="your@email.com")
@@ -932,7 +1072,7 @@ def create_interface():
                         with gr.Column(scale=1):
                             gr.Markdown("### 1. Setup")
                             post_size_dd = gr.Dropdown(list(post_sizes.keys()), label="Select Post Size", value="Instagram Square (1:1)")
-                            bg_color_picker = gr.ColorPicker(value="#FFFFFF", label="Background Color", interactive=True, elem_id="social_bg_color_picker")
+                            bg_color_picker = gr.ColorPicker(value="#FFFFFF", label="Background Color", interactive=True, elem_id="social_bg_color_picker") # <-- FIXED with elem_id
                             create_canvas_btn = gr.Button("Set Background & Size", variant="secondary")
                             
                             gr.Markdown("### 2. Add Elements")
@@ -941,7 +1081,7 @@ def create_interface():
                             heading_text = gr.Textbox(label="Heading Text", placeholder="Your Catchy Title...")
                             paragraph_text = gr.Textbox(label="Paragraph Text", placeholder="Add more details here...", lines=3)
                             text_font_dd = gr.Dropdown(list(fonts_available.keys()), label="Font Style", value=list(fonts_available.keys())[0])
-                            text_color_picker = gr.ColorPicker(label="Text Color", value="#000000", interactive=True, elem_id="social_text_color_picker")
+                            text_color_picker = gr.ColorPicker(label="Text Color", value="#000000", interactive=True, elem_id="social_text_color_picker") # <-- FIXED with elem_id
                             text_alignment_radio = gr.Radio(["Left", "Center", "Right"], label="Paragraph Alignment", value="Left")
                             add_heading_btn = gr.Button("➕ Add Heading")
                             add_paragraph_btn = gr.Button("➕ Add Paragraph")
