@@ -1135,7 +1135,8 @@ def create_interface():
                                 error_img = Image.new('RGB', (300, 100), color='gray')
                                 draw = ImageDraw.Draw(error_img)
                                 draw.text((10,10), "Set Base First", fill="white")
-                                return error_img, format_social_layers(layers), gr.update() # <-- FIXED BUG
+                                # --- FIXED BUG: Return base_img (which is None) ---
+                                return error_img, format_social_layers(layers), None
                         
                         # Render layers onto a *copy* of the base_img state
                         # We pass the original bg_color/template_path/bg_type in case render_social_post needs them
