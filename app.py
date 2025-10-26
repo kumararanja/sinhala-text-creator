@@ -1,3 +1,4 @@
+
 """
 Sinhala Text Creator - COMPLETE VERSION WITH ADMIN DASHBOARD AND ADVANCED EFFECTS
 ==================================================================================
@@ -928,14 +929,14 @@ def create_interface():
                             # Solid Color controls (visible by default)
                             with gr.Column(visible=True) as solid_color_controls:
                                 bg_color_picker = gr.ColorPicker(value="#FFFFFF", label="Background Color", interactive=True, elem_id="social_bg_color_picker")
-                                # create_canvas_btn = gr.Button("Set Background & Size", variant="secondary") # <-- REMOVED
+                                # --- REMOVED BUTTON ---
 
                             # Template controls (hidden by default)
                             with gr.Column(visible=False) as template_controls:
                                 template_gallery = gr.Gallery(value=template_files, label="Select a Template", columns=5, height=120, allow_preview=False)
                                 gr.Markdown("*(Click a template to set it as the background)*")
                             
-                            # --- NEW: Add Elements group, disabled by default ---
+                            # --- FIXED: `interactive=False` by default ---
                             with gr.Group(interactive=False) as add_elements_group:
                                 gr.Markdown("### 2. Add Elements")
                                 gr.Markdown("#### Text")
@@ -963,8 +964,8 @@ def create_interface():
                             post_status_text = gr.Textbox(label="Status", interactive=False)
                             social_layers_list = gr.Textbox(label="📝 Elements", lines=5, interactive=False, value="No elements added yet")
                             with gr.Row():
-                                social_remove_last_btn = gr.Button("🔙 Remove Last Element", variant="secondary")
-                                social_clear_all_btn = gr.Button("🗑️ Clear All Elements", variant="stop")
+                                social_remove_last_btn = gr.Button("🔙 Remove Last Element", variant="secondary", interactive=False) # <-- Set interactive=False
+                                social_clear_all_btn = gr.Button("🗑️ Clear All Elements", variant="stop", interactive=False) # <-- Set interactive=False
                             
                             gr.Markdown("---")
                             gr.Markdown("### 💾 Download Your Post")
@@ -988,7 +989,7 @@ def create_interface():
                         inputs=[bg_type_radio],
                         outputs=[solid_color_controls, template_controls]
                     )
-
+                    
                     # --- NEW: Function to create canvas and enable controls ---
                     def create_base_canvas(size_key, bg_color, template_path, bg_type):
                         try:
@@ -1016,7 +1017,7 @@ def create_interface():
                                 base_img.paste(img)
 
                             # Clear layers and enable controls
-                            return base_img, base_img, [], 1, "Canvas set. Add elements.", "No elements added yet", gr.update(interactive=True)
+                            return base_img, base_img, [], 1, "Canvas set. Add elements.", "No elements added yet", gr.update(interactive=True), gr.update(interactive=True), gr.update(interactive=True)
                         
                         except Exception as e:
                             print(f"Error creating canvas: {e}")
@@ -1024,27 +1025,27 @@ def create_interface():
                             draw = ImageDraw.Draw(error_img)
                             draw.text((10, 10), f"Render Error: {e}", fill='white')
                             # Return error image, clear layers, disable controls
-                            return error_img, error_img, [], 1, f"Error: {e}", "Error", gr.update(interactive=False)
+                            return error_img, error_img, [], 1, f"Error: {e}", "Error", gr.update(interactive=False), gr.update(interactive=False), gr.update(interactive=False)
 
                     # 1. Create Base Canvas (from Color) - NEW: attached to color picker change
                     bg_color_picker.change(
                         fn=create_base_canvas,
                         inputs=[post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
-                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list, add_elements_group]
+                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list, add_elements_group, social_remove_last_btn, social_clear_all_btn]
                     )
                     
                     # 1b. Create Base Canvas (from Template) - NEW: attached to gallery select
                     template_gallery.select(
                         fn=create_base_canvas,
                         inputs=[post_size_dd, bg_color_picker, template_gallery, bg_type_radio], # Pass gallery to get evt.value
-                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list, add_elements_group]
+                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list, add_elements_group, social_remove_last_btn, social_clear_all_btn]
                     )
 
                     # 1c. Re-create canvas if size changes
                     post_size_dd.change(
                         fn=create_base_canvas,
                         inputs=[post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
-                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list, add_elements_group]
+                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list, add_elements_group, social_remove_last_btn, social_clear_all_btn]
                     )
 
                     # 2. Store uploaded logo
@@ -1113,26 +1114,45 @@ def create_interface():
                     )
                     
                     # 8. Update preview function (triggered by .change() below)
-                    def update_preview_and_layer_list(base_img, layers, size_key, bg_color, template_path, bg_type): # Added template path and type
+                    def update_preview_and_layer_list(base_img, layers, size_key, bg_color, template_path, bg_type):
                         # This function now renders based on the selected *base_img* state
                         if base_img is None:
-                            # Create a blank placeholder if no base is set
-                            width, height = post_sizes[size_key]
-                            error_img = Image.new('RGB', (width, height), color='grey')
-                            draw = ImageDraw.Draw(error_img)
-                            draw.text((50,50), "Select a Background Color or Template to begin", fill="white")
-                            return error_img, format_social_layers(layers)
-
-                        # Render layers onto a *copy* of the base_img state
+                            try:
+                                width, height = post_sizes[size_key]
+                                # Create a default base if none is set
+                                if bg_type == "Template" and template_path:
+                                    base_img_obj = Image.open(template_path).convert('RGBA')
+                                    base_img_obj = base_img_obj.resize((width, height), Image.Resampling.LANCZOS)
+                                else:
+                                    if not isinstance(bg_color, str) or not bg_color.startswith('#'): bg_color = "#FFFFFF"
+                                    base_img_obj = Image.new('RGB', (width, height), bg_color)
+                                
+                                # Convert to RGB for state
+                                if base_img_obj.mode == 'RGBA':
+                                    rgb_img = Image.new("RGB", base_img_obj.size, (255, 255, 255))
+                                    rgb_img.paste(base_img_obj, mask=base_img_obj.split()[3])
+                                    base_img = rgb_img # Now base_img is a PIL RGB Image
+                                else:
+                                    base_img = base_img_obj # Already RGB
+                                    
+                            except Exception as e:
+                                print(f"Error creating base image in update: {e}")
+                                error_img = Image.new('RGB', (300, 100), color='gray')
+                                draw = ImageDraw.Draw(error_img)
+                                draw.text((10,10), "Set Base First", fill="white")
+                                # --- FIXED BUG: Return base_img (which is None) ---
+                                return error_img, format_social_layers(layers), None
+                        
                         rendered_image = render_social_post(size_key, bg_color, template_path, bg_type, layers)
                         layer_text = format_social_layers(layers)
-                        return rendered_image, layer_text
+                        return rendered_image, layer_text, base_img
+
                     
                     # Trigger preview update when layers change
                     social_layers_state.change(
                          fn=update_preview_and_layer_list,
                          inputs=[social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
-                         outputs=[post_preview_img, social_layers_list]
+                         outputs=[post_preview_img, social_layers_list, social_post_base_image]
                     )
                     
                     # 9. Remove Last Social Layer
@@ -1150,11 +1170,11 @@ def create_interface():
                         # Also disable the add elements group again
                         # And reset the base image
                         base_img, _, _, _, _, status, layers_text = create_base_canvas(size_key, bg_color, template_path, bg_type)
-                        return [], "✅ Cleared all elements", base_img, base_img, layers_text, gr.update(interactive=False)
+                        return [], "✅ Cleared all elements", base_img, base_img, layers_text, gr.update(interactive=False), gr.update(interactive=False), gr.update(interactive=False)
                     social_clear_all_btn.click(
                         fn=clear_all_social_layers,
                         inputs=[post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
-                        outputs=[social_layers_state, post_status_text, social_post_base_image, post_preview_img, social_layers_list, add_elements_group]
+                        outputs=[social_layers_state, post_status_text, social_post_base_image, post_preview_img, social_layers_list, add_elements_group, social_remove_last_btn, social_clear_all_btn]
                     )
                     
                     # 11. Download Social Post
