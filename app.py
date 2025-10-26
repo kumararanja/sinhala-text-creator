@@ -1245,7 +1245,7 @@ def create_interface():
                         [social_layers_state, social_next_layer_id, post_status_text]
                     )
                     
-                    # 6. Add Paragraph Layer
+                    # 6. Add Paragraph Layer - FIXED VERSION
                     def add_paragraph_element(current_layers, next_id, para_txt, font_key, font_size, txt_color, align, effect_type, preset_name):
                         if not para_txt.strip(): 
                             return current_layers, next_id, "Enter paragraph text"
@@ -1285,7 +1285,7 @@ def create_interface():
                         [social_layers_state, social_next_layer_id, post_status_text]
                     )
                     
-                    # 8. Update preview function (triggered by .change() below)
+                    # 8. Update preview function (triggered by .change() below) - FIXED VERSION
                     def update_preview_and_layer_list(base_img, layers, size_key, bg_color, template_path, bg_type):
                         print(f"update_preview_and_layer_list - base_img: {base_img is not None}, layers: {len(layers)}")
                         
@@ -1326,7 +1326,21 @@ def create_interface():
                             draw.text((10,10), f"Error: {str(e)[:50]}", fill="white")
                             return error_img, format_social_layers(layers)
                     
+                    # Update the preview when layers change
                     social_layers_state.change(
+                         update_preview_and_layer_list,
+                         [social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                         [post_preview_img, social_layers_list]
+                    )
+                    
+                    # Also update when background changes
+                    post_size_dd.change(
+                         update_preview_and_layer_list,
+                         [social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                         [post_preview_img, social_layers_list]
+                    )
+                    
+                    bg_color_picker.change(
                          update_preview_and_layer_list,
                          [social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
                          [post_preview_img, social_layers_list]
