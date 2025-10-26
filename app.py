@@ -247,13 +247,13 @@ for name, path in FONT_PATHS.items():
     try:
         print(f"Attempting to load: {name} from {path}")
         if not os.path.exists(path):
-            print(f"  ❌ FAILED: Font file not found at '{path}'")
-            continue
+             print(f"  ❌ FAILED: Font file not found at '{path}'")
+             continue
         ImageFont.truetype(path, 20)
         fonts_available[name] = path
         print(f"  ✅ SUCCESS: Loaded {name}")
     except Exception as e:
-        print(f"  ❌ FAILED to load font '{name}' from path '{path}': {e}")
+         print(f"  ❌ FAILED to load font '{name}' from path '{path}': {e}")
 print("--- Finished Loading Fonts ---")
 if not fonts_available:
     print("⚠️ WARNING: No fonts loaded successfully. Using system fallback.")
@@ -407,9 +407,6 @@ def render_text_layer_advanced(draw, layer, font, image=None):
     else:
         render_text_layer(draw, layer, font)
 
-#
-# --- FIX 1: REPLACED render_social_text_layer ---
-#
 def render_social_text_layer(draw, props, image=None):
     """Renderer for social post text layers, using effect functions - FIXED VERSION"""
     font_path = fonts_available.get(props.get('font_key'), list(fonts_available.values())[0])
@@ -434,47 +431,36 @@ def render_social_text_layer(draw, props, image=None):
     
     width, height = image.size
     
-    # --- START OF FIX (from 2nd request) ---
-    # Calculate text positioning
-    
-    custom_x = props.get('x')
-    custom_y = props.get('y')
-    
-    if custom_x is not None and custom_y is not None:
-        # Use custom X/Y coordinates if provided
-        text_x = custom_x
-        text_y = custom_y
-        # Use alignment for anchor
-        if alignment == "Center":
-            text_anchor = "mt"
-        elif alignment == "Right":
-            text_anchor = "rt"
-        else: # Left
-            text_anchor = "lt"
-            
-    elif is_heading:
-        # Original fallback for heading - center at top
-        bbox = draw.textbbox((0, 0), text, font=font_obj, anchor="lt")
-        text_width = bbox[2] - bbox[0]
-        text_x = width // 2
-        text_y = int(height * 0.1)  # 10% from top
-        text_anchor = "mt"  # Middle top
+    # Calculate text positioning - FIXED: Use custom x,y if provided
+    if 'x' in props and 'y' in props:
+        # Use custom position from click
+        text_x = props['x']
+        text_y = props['y']
+        text_anchor = "lt"  # Left top anchor for custom positioning
     else:
-        # Original fallback for paragraph - start higher up
-        text_y = int(height * 0.15)
-        
-        # Handle alignment
-        if alignment == "Center":
-            text_anchor = "mt"
+        # Use default positioning
+        if is_heading:
+            # For heading - center at top
+            bbox = draw.textbbox((0, 0), text, font=font_obj, anchor="lt")
+            text_width = bbox[2] - bbox[0]
             text_x = width // 2
-        elif alignment == "Right":
-            text_anchor = "rt"
-            text_x = int(width * 0.9)
-        else:  # Left alignment
-            text_anchor = "lt"
-            text_x = int(width * 0.1)
-    # --- END OF FIX ---
+            text_y = int(height * 0.1)  # 10% from top
+            text_anchor = "mt"  # Middle top
+        else:
+            # For paragraph - start higher up (15% from top instead of 25%)
+            text_y = int(height * 0.15)
             
+            # Handle alignment
+            if alignment == "Center":
+                text_anchor = "mt"
+                text_x = width // 2
+            elif alignment == "Right":
+                text_anchor = "rt"
+                text_x = int(width * 0.9)
+            else:  # Left alignment
+                text_anchor = "lt"
+                text_x = int(width * 0.1)
+    
     # Handle multi-line text for paragraphs
     if not is_heading and '\n' in text:
         lines = text.split('\n')
@@ -974,7 +960,7 @@ def create_interface():
                                 remove_last_btn = gr.Button("🔙 Remove Last", variant="secondary")
                                 undo_btn = gr.Button("↩️ Undo", variant="secondary")
                                 clear_all_btn = gr.Button("🗑️ Clear All", variant="stop")
-                        
+                    
                     # --- Event Handlers for Tab 2 ---
                     load_btn.click(
                         lambda x: (x, "✅ Image loaded! Click on image to position text") if x else (None, "❌ No image in Tab 1"),
@@ -1001,7 +987,6 @@ def create_interface():
                         [text_color, outline_color, outline_w, shadow_blur, add_shadow, add_glow, effect_type]
                     )
                     
-                    # This is the fixed function from the first request
                     def add_text(base, layers, next_id, hist, txt, fnt, sz, tcol, ocol, ow, shad, blur, glow, opac, x, y, effect_type):
                         if not base: return layers, next_id, hist, format_layers(layers), None, "❌ Load image first"
                         if not txt.strip(): return layers, next_id, hist, format_layers(layers), None, "❌ Enter text"
@@ -1078,6 +1063,11 @@ def create_interface():
                     logo_image_state = gr.State(None)
                     social_effect_type_state = gr.State("normal")
                     template_selection_state = gr.State(None)
+                    
+                    # NEW: Add state for paragraph positioning
+                    paragraph_x_state = gr.State(0)
+                    paragraph_y_state = gr.State(0)
+                    paragraph_positioning_mode = gr.State(False)  # Track if we're in paragraph positioning mode
 
                     with gr.Row():
                         with gr.Column(scale=1):
@@ -1109,7 +1099,7 @@ def create_interface():
                             
                             add_heading_btn = gr.Button("➕ Add Heading", variant="primary")
                             
-                            # Paragraph Controls
+                            # Paragraph Controls - UPDATED FOR CLICK POSITIONING
                             gr.Markdown("#### Paragraph")
                             paragraph_text = gr.Textbox(label="Paragraph Text", placeholder="Add more details here...", lines=3)
                             with gr.Row():
@@ -1118,19 +1108,26 @@ def create_interface():
                             paragraph_color_picker = gr.ColorPicker(label="Paragraph Color", value="#000000", interactive=True)
                             text_alignment_radio = gr.Radio(["Left", "Center", "Right"], label="Paragraph Alignment", value="Left")
                             
-                            add_paragraph_btn = gr.Button("➕ Add Paragraph", variant="primary")
+                            # NEW: Paragraph positioning controls
+                            with gr.Row():
+                                paragraph_x_num = gr.Number(label="Paragraph X", value=100, interactive=False)
+                                paragraph_y_num = gr.Number(label="Paragraph Y", value=100, interactive=False)
+                            
+                            # UPDATED: Button to enable paragraph positioning mode
+                            enable_paragraph_position_btn = gr.Button("🎯 Click to Set Paragraph Position", variant="secondary")
+                            add_paragraph_btn = gr.Button("➕ Add Paragraph at Position", variant="primary")
                             
                             gr.Markdown("#### Logo (Optional)")
                             logo_upload_img = gr.Image(label="Upload Logo (PNG Recommended)", type="pil", height=100)
                             logo_size_radio = gr.Radio(["Small (50px)", "Medium (100px)", "Large (150px)"], label="Logo Size", value="Medium (100px)")
-                            gr.Markdown("*(Click preview image to position element)*")
+                            gr.Markdown("*(Click preview image to position logo)*")
                             with gr.Row():
-                                logo_x_num = gr.Number(label="Element X", value=50, interactive=True)
-                                logo_y_num = gr.Number(label="Element Y", value=50, interactive=True)
-                            add_logo_btn = gr.Button("➕ Add Logo")
+                                logo_x_num = gr.Number(label="Logo X", value=50, interactive=False)
+                                logo_y_num = gr.Number(label="Logo Y", value=50, interactive=False)
+                            add_logo_btn = gr.Button("➕ Add/Update Logo")
                             
                         with gr.Column(scale=2):
-                            gr.Markdown("### Preview (Click to set X/Y for next element)")
+                            gr.Markdown("### Preview (Click to Position Elements)")
                             post_preview_img = gr.Image(label="Post Preview")
                             post_status_text = gr.Textbox(label="Status", interactive=False)
                             social_layers_list = gr.Textbox(label="📝 Elements", lines=5, value="No elements added yet")
@@ -1235,6 +1232,11 @@ def create_interface():
                         return evt.index[0], evt.index[1]
                     post_preview_img.select(set_logo_pos, None, [logo_x_num, logo_y_num])
                     
+                    # NEW: Set paragraph position
+                    def set_paragraph_pos(evt: gr.SelectData):
+                        return evt.index[0], evt.index[1], f"✅ Paragraph position set to ({evt.index[0]}, {evt.index[1]})"
+                    post_preview_img.select(set_paragraph_pos, None, [paragraph_x_num, paragraph_y_num, post_status_text])
+                    
                     # 4. Update controls from Social Preset
                     def update_social_controls_from_preset(preset_name):
                         if preset_name in PRESETS:
@@ -1243,10 +1245,8 @@ def create_interface():
                         return gr.update(), gr.update()
                     social_preset_dd.change(update_social_controls_from_preset, [social_preset_dd], [heading_color_picker, social_effect_type_state])
                     
-                    #
-                    # --- FIX 2: REPLACED add_heading_element ---
-                    #
-                    def add_heading_element(current_layers, next_id, head_txt, font_key, font_size, txt_color, effect_type, preset_name, x, y):
+                    # 5. Add Heading Layer
+                    def add_heading_element(current_layers, next_id, head_txt, font_key, font_size, txt_color, effect_type, preset_name):
                         if not head_txt.strip(): 
                             return current_layers, next_id, "Enter heading text"
                         props = {
@@ -1256,9 +1256,7 @@ def create_interface():
                             'font_size': int(font_size),
                             'color': txt_color, 
                             'is_heading': True, 
-                            'effect_type': effect_type,
-                            'x': int(x), # <-- ADDED
-                            'y': int(y)  # <-- ADDED
+                            'effect_type': effect_type
                         }
                         if preset_name in PRESETS: 
                             props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000')
@@ -1267,14 +1265,11 @@ def create_interface():
                         return updated_layers, next_id + 1, "Heading added"
                     add_heading_btn.click(
                         add_heading_element,
-                        # Pass in logo_x_num and logo_y_num for position
-                        [social_layers_state, social_next_layer_id, heading_text, heading_font_dd, heading_font_size, heading_color_picker, social_effect_type_state, social_preset_dd, logo_x_num, logo_y_num],
+                        [social_layers_state, social_next_layer_id, heading_text, heading_font_dd, heading_font_size, heading_color_picker, social_effect_type_state, social_preset_dd],
                         [social_layers_state, social_next_layer_id, post_status_text]
                     )
                     
-                    #
-                    # --- FIX 3: REPLACED add_paragraph_element ---
-                    #
+                    # 6. Add Paragraph Layer - UPDATED FOR CLICK POSITIONING
                     def add_paragraph_element(current_layers, next_id, para_txt, font_key, font_size, txt_color, align, effect_type, preset_name, x, y):
                         if not para_txt.strip(): 
                             return current_layers, next_id, "Enter paragraph text"
@@ -1287,32 +1282,29 @@ def create_interface():
                             'align': align, 
                             'is_heading': False, 
                             'effect_type': effect_type,
-                            'x': int(x), # <-- ADDED
-                            'y': int(y)  # <-- ADDED
+                            'x': x,  # Use clicked position
+                            'y': y   # Use clicked position
                         }
                         if preset_name in PRESETS: 
                             props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000')
                         new_layer = SocialLayer(id=next_id, type='text', properties=props)
                         updated_layers = current_layers + [new_layer]
-                        return updated_layers, next_id + 1, "Paragraph added"
+                        return updated_layers, next_id + 1, f"Paragraph added at position ({x}, {y})"
                     add_paragraph_btn.click(
                         add_paragraph_element,
-                        # Pass in logo_x_num and logo_y_num for position
-                        [social_layers_state, social_next_layer_id, paragraph_text, paragraph_font_dd, paragraph_font_size, paragraph_color_picker, text_alignment_radio, social_effect_type_state, social_preset_dd, logo_x_num, logo_y_num],
+                        [social_layers_state, social_next_layer_id, paragraph_text, paragraph_font_dd, paragraph_font_size, paragraph_color_picker, text_alignment_radio, social_effect_type_state, social_preset_dd, paragraph_x_num, paragraph_y_num],
                         [social_layers_state, social_next_layer_id, post_status_text]
                     )
                     
-                    #
-                    # --- FIX 4: REPLACED add_logo_element ---
-                    #
+                    # 7. Add Logo Layer
                     def add_logo_element(current_layers, next_id, logo_obj, size_str, x, y):
                         if logo_obj is None: 
                             return current_layers, next_id, "Upload a logo first"
-                        # current_layers = [lyr for lyr in current_layers if lyr.type != 'logo'] # <-- THIS LINE WAS REMOVED
+                        current_layers = [lyr for lyr in current_layers if lyr.type != 'logo']
                         props = {'type': 'logo', 'logo_obj': logo_obj, 'size_str': size_str, 'x': x, 'y': y}
                         new_layer = SocialLayer(id=next_id, type='logo', properties=props)
                         updated_layers = current_layers + [new_layer]
-                        return updated_layers, next_id + 1, "Logo added" # Updated message
+                        return updated_layers, next_id + 1, "Logo added/updated"
                     add_logo_btn.click(
                         add_logo_element,
                         [social_layers_state, social_next_layer_id, logo_image_state, logo_size_radio, logo_x_num, logo_y_num],
@@ -1431,14 +1423,14 @@ def create_interface():
         # --- UPDATED FEATURES SECTION with SINHALA TRANSLATIONS ---
         with gr.Row(elem_id="features_section"):
              gr.Markdown("""
-              ---
-              ### ✨ Features (විශේෂාංග)
-              - 🆓 මාසිකව නොමිලේ AI උත්පාදන 5ක් (5 FREE AI generations per month)
-              - 📤 අසීමිත උඩුගත කිරීම් (නොමිලේ!) (Unlimited uploads FREE!)
-              - ✍️ අසීමිත පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
-              - 🎨 නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
-              - 🔄 මාසිකව ස්වයංක්‍රීයව යළි පිහිටුවේ (Auto-resets monthly)
-              """)
+             ---
+             ### ✨ Features (විශේෂාංග)
+             - 🆓 මාසිකව නොමිලේ AI උත්පාදන 5ක් (5 FREE AI generations per month)
+             - 📤 අසීමිත උඩුගත කිරීම් (නොමිලේ!) (Unlimited uploads FREE!)
+             - ✍️ අසීමිත පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
+             - 🎨 නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
+             - 🔄 මාසිකව ස්වයංක්‍රීයව යළි පිහිටුවේ (Auto-resets monthly)
+             """)
 
         # --- FOOTER SECTION ---
         gr.Markdown("---") # Add a separator line
@@ -1491,7 +1483,7 @@ def create_interface():
                     stats,
                     gr.update(visible=False), # auth_section
                     gr.update(visible=True),  # main_app
-                    msg                   # login_msg
+                    msg                      # login_msg
                 )
             return None, "**Status:** Not logged in", "", gr.update(visible=True), gr.update(visible=False), msg
 
@@ -1506,10 +1498,10 @@ def create_interface():
             return (
                 None,
                 "**Status:** Logged out",
-                "",                   # stats_display placeholder
+                "",                       # stats_display placeholder
                 gr.update(visible=True),  # auth_section
                 gr.update(visible=False), # main_app
-                "👋 Logged out"          # login_msg placeholder
+                "👋 Logged out"            # login_msg placeholder
             )
 
         logout_btn.click(
