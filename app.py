@@ -407,96 +407,99 @@ def render_text_layer_advanced(draw, layer, font, image=None):
     else:
         render_text_layer(draw, layer, font)
 
-def render_social_text_layer(draw, props, image=None):
-    """Renderer for social post text layers, using effect functions - FIXED VERSION"""
-    font_path = fonts_available.get(props.get('font_key'), list(fonts_available.values())[0])
-    
-    # Use custom font size if provided, otherwise calculate based on image size
-    custom_font_size = props.get('font_size')
-    if custom_font_size:
-        font_size = custom_font_size
-    else:
-        width, _ = image.size
-        heading_font_size = max(30, int(width / 18))
-        para_font_size = max(20, int(width / 35))
-        font_size = heading_font_size if props.get('is_heading') else para_font_size
-    
-    font_obj = ImageFont.truetype(font_path, font_size)
-    text = props.get('text', '')
-    color = props.get('color', '#000000')
-    alignment = props.get('align', 'Left')
-    is_heading = props.get('is_heading', False)
-    effect = props.get('effect_type', 'normal')
-    outline_color = props.get('outline_color', '#000000')
-    
-    width, height = image.size
-    
-    # Calculate text positioning - FIXED: Use custom x,y if provided for BOTH heading and paragraph
-    if 'x' in props and 'y' in props:
-        # Use custom position from click for BOTH heading and paragraph
-        text_x = props['x']
-        text_y = props['y']
-        text_anchor = "lt"  # Left top anchor for custom positioning
-    else:
-        # Use default positioning (fallback)
-        if is_heading:
-            # For heading - center at top
-            bbox = draw.textbbox((0, 0), text, font=font_obj, anchor="lt")
-            text_width = bbox[2] - bbox[0]
-            text_x = width // 2
-            text_y = int(height * 0.1)  # 10% from top
-            text_anchor = "mt"  # Middle top
-        else:
-            # For paragraph - start higher up (15% from top instead of 25%)
-            text_y = int(height * 0.15)
-            
-            # Handle alignment
-            if alignment == "Center":
-                text_anchor = "mt"
-                text_x = width // 2
-            elif alignment == "Right":
-                text_anchor = "rt"
-                text_x = int(width * 0.9)
-            else:  # Left alignment
-                text_anchor = "lt"
-                text_x = int(width * 0.1)
-    
-    # Handle multi-line text for paragraphs
-    if not is_heading and '\n' in text:
-        lines = text.split('\n')
-        line_height = font_size + 10  # Add spacing between lines
+# FIXED: Completely rewritten rendering function for social posts
+def render_social_text_layer(draw, props, image):
+    """Fixed renderer for social post text layers"""
+    try:
+        font_path = fonts_available.get(props.get('font_key'), list(fonts_available.values())[0])
         
-        for i, line in enumerate(lines):
-            current_y = text_y + (i * line_height)
-            
-            # Call effect renderers for each line
-            if effect == "neon":
-                apply_neon_effect(draw, line, font_obj, text_x, current_y, color, outline_color)
-            elif effect == "chrome":
-                apply_chrome_effect(draw, line, font_obj, text_x, current_y)
-            elif effect == "fire":
-                apply_fire_effect(draw, line, font_obj, text_x, current_y)
-            elif effect == "3d":
-                apply_3d_shadow_effect(draw, line, font_obj, text_x, current_y, color, outline_color)
-            elif effect == "gradient" and image:
-                apply_gradient_effect(image, draw, line, font_obj, text_x, current_y, color, outline_color)
+        # Get font size
+        custom_font_size = props.get('font_size')
+        if custom_font_size:
+            font_size = custom_font_size
+        else:
+            width, _ = image.size
+            font_size = max(30, int(width / 18)) if props.get('is_heading') else max(20, int(width / 35))
+        
+        font_obj = ImageFont.truetype(font_path, font_size)
+        text = props.get('text', '')
+        color = props.get('color', '#000000')
+        alignment = props.get('align', 'Left')
+        is_heading = props.get('is_heading', False)
+        effect = props.get('effect_type', 'normal')
+        outline_color = props.get('outline_color', '#000000')
+        
+        width, height = image.size
+        
+        # Use custom position if provided
+        if 'x' in props and 'y' in props:
+            text_x = props['x']
+            text_y = props['y']
+            text_anchor = "lt"
+        else:
+            # Default positioning
+            if is_heading:
+                text_x = width // 2
+                text_y = int(height * 0.1)
+                text_anchor = "mt"
             else:
-                draw.text((text_x, current_y), line, fill=color, font=font_obj, anchor=text_anchor)
-        return
-    
-    # Single line text or heading
-    if effect == "neon":
-        apply_neon_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
-    elif effect == "chrome":
-        apply_chrome_effect(draw, text, font_obj, text_x, text_y)
-    elif effect == "fire":
-        apply_fire_effect(draw, text, font_obj, text_x, text_y)
-    elif effect == "3d":
-        apply_3d_shadow_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
-    elif effect == "gradient" and image:
-        apply_gradient_effect(image, draw, text, font_obj, text_x, text_y, color, outline_color)
-    else:
-        draw.text((text_x, text_y), text, fill=color, font=font_obj, anchor=text_anchor)
+                text_y = int(height * 0.15)
+                if alignment == "Center":
+                    text_anchor = "mt"
+                    text_x = width // 2
+                elif alignment == "Right":
+                    text_anchor = "rt"
+                    text_x = int(width * 0.9)
+                else:
+                    text_anchor = "lt"
+                    text_x = int(width * 0.1)
+        
+        # Convert color to RGB
+        try:
+            text_rgb = tuple(int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        except:
+            text_rgb = (0, 0, 0)  # Fallback to black
+        
+        # Handle multi-line text
+        if not is_heading and '\n' in text:
+            lines = text.split('\n')
+            line_height = font_size + 10
+            
+            for i, line in enumerate(lines):
+                current_y = text_y + (i * line_height)
+                
+                if effect == "neon":
+                    apply_neon_effect(draw, line, font_obj, text_x, current_y, color, outline_color)
+                elif effect == "chrome":
+                    apply_chrome_effect(draw, line, font_obj, text_x, current_y)
+                elif effect == "fire":
+                    apply_fire_effect(draw, line, font_obj, text_x, current_y)
+                elif effect == "3d":
+                    apply_3d_shadow_effect(draw, line, font_obj, text_x, current_y, color, outline_color)
+                elif effect == "gradient":
+                    apply_gradient_effect(image, draw, line, font_obj, text_x, current_y, color, outline_color)
+                else:
+                    # Simple text rendering with proper color
+                    draw.text((text_x, current_y), line, fill=text_rgb, font=font_obj, anchor=text_anchor)
+            return
+        
+        # Single line text
+        if effect == "neon":
+            apply_neon_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
+        elif effect == "chrome":
+            apply_chrome_effect(draw, text, font_obj, text_x, text_y)
+        elif effect == "fire":
+            apply_fire_effect(draw, text, font_obj, text_x, text_y)
+        elif effect == "3d":
+            apply_3d_shadow_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
+        elif effect == "gradient":
+            apply_gradient_effect(image, draw, text, font_obj, text_x, text_y, color, outline_color)
+        else:
+            # Simple text rendering with proper color
+            draw.text((text_x, text_y), text, fill=text_rgb, font=font_obj, anchor=text_anchor)
+            
+    except Exception as e:
+        print(f"Error in render_social_text_layer: {e}")
 
 # --- RENDERER FOR TAB 2 ---
 def render_all_layers(base_image, layers: List[TextLayer]):
@@ -1308,6 +1311,10 @@ def create_interface():
                         add_heading_element,
                         [social_layers_state, social_next_layer_id, heading_text, heading_font_dd, heading_font_size, heading_color_picker, social_effect_type_state, social_preset_dd, heading_x_num, heading_y_num],
                         [social_layers_state, social_next_layer_id, post_status_text]
+                    ).then(
+                        lambda *args: update_preview_and_layer_list(*args),
+                        [social_layers_state, social_post_base_image, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                        [post_preview_img, social_layers_list]
                     )
                     
                     # 6. Add Paragraph Layer - UPDATED FOR CLICK POSITIONING
@@ -1337,6 +1344,10 @@ def create_interface():
                         add_paragraph_element,
                         [social_layers_state, social_next_layer_id, paragraph_text, paragraph_font_dd, paragraph_font_size, paragraph_color_picker, text_alignment_radio, social_effect_type_state, social_preset_dd, paragraph_x_num, paragraph_y_num],
                         [social_layers_state, social_next_layer_id, post_status_text]
+                    ).then(
+                        lambda *args: update_preview_and_layer_list(*args),
+                        [social_layers_state, social_post_base_image, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                        [post_preview_img, social_layers_list]
                     )
                     
                     # 7. Add Logo Layer - UPDATED FOR MULTIPLE LOGOS
@@ -1352,6 +1363,10 @@ def create_interface():
                         add_logo_element,
                         [social_layers_state, social_next_layer_id, logo_image_state, logo_size_radio, logo_x_num, logo_y_num],
                         [social_layers_state, social_next_layer_id, post_status_text]
+                    ).then(
+                        lambda *args: update_preview_and_layer_list(*args),
+                        [social_layers_state, social_post_base_image, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                        [post_preview_img, social_layers_list]
                     )
                     
                     # 8. Update preview function (triggered by .change() below)
@@ -1411,12 +1426,20 @@ def create_interface():
                         if not layers: 
                             return layers, "No elements to remove"
                         return layers[:-1], "✅ Removed last element"
-                    social_remove_last_btn.click(remove_last_social_layer, [social_layers_state], [social_layers_state, post_status_text])
+                    social_remove_last_btn.click(remove_last_social_layer, [social_layers_state], [social_layers_state, post_status_text]).then(
+                        lambda *args: update_preview_and_layer_list(*args),
+                        [social_layers_state, social_post_base_image, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                        [post_preview_img, social_layers_list]
+                    )
                     
                     # 10. Clear All Social Layers
                     def clear_all_social_layers():
                         return [], "✅ Cleared all elements"
-                    social_clear_all_btn.click(clear_all_social_layers, [], [social_layers_state, post_status_text])
+                    social_clear_all_btn.click(clear_all_social_layers, [], [social_layers_state, post_status_text]).then(
+                        lambda *args: update_preview_and_layer_list(*args),
+                        [social_layers_state, social_post_base_image, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                        [post_preview_img, social_layers_list]
+                    )
                     
                     # 11. Download Social Post
                     social_prepare_download_btn.click(
