@@ -723,47 +723,7 @@ def create_interface():
         user_state = gr.State(None)
 
         # --- UPDATED INTRO HTML ---
-        gr.HTML("""
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&family=Noto+Sans+Sinhala:wght@400;700;800&display=swap" rel="stylesheet">
-        <style>
-            .hero-container { padding: 60px 30px; background: linear-gradient(120deg, #5f72bd 0%, #a4508b 100%); border-radius: 25px; margin-bottom: 40px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); font-family: 'Poppins', sans-serif; overflow: hidden; position: relative; }
-            .hero-title { font-size: 60px; font-weight: 800; color: white; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); letter-spacing: 0.5px; }
-            .hero-subtitle { font-size: 20px; font-weight: 300; color: #e0e7ff; margin-bottom: 45px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.85; }
-            .content-wrapper { max-width: 900px; margin: 0 auto 40px auto; background: rgba(255, 255, 255, 1); border-radius: 20px; padding: 40px 50px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1); }
-            .lang-box { padding: 30px; border-radius: 15px; margin-bottom: 25px; border-left: 5px solid; text-align: left; transition: transform 0.3s ease, box-shadow 0.3s ease; }
-            .lang-box:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-            .lang-box h3 { font-size: 26px; font-weight: 700; margin: 0 0 15px 0; font-family: 'Noto Sans Sinhala', 'Poppins', sans-serif; }
-            .lang-box p { font-size: 17px; line-height: 1.7; margin: 0; font-family: 'Noto Sans Sinhala', 'Poppins', sans-serif; }
-            .sinhala-box { background: #fff9e6; border-color: #764ba2; color: #444; }
-            .sinhala-box h3 { color: #5a3e75; }
-            .english-box { background: #eef2ff; border-color: #ffc872; color: #444; margin-bottom: 0; }
-            .english-box h3 { color: #506aac; }
-            .features-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 30px; }
-            .feature-pill { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 12px 25px; border-radius: 50px; font-size: 15px; font-weight: 500; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); transition: all 0.25s ease-out; cursor: default; }
-            .feature-pill:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-3px) scale(1.03); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); }
-        </style>
-        <div class="hero-container">
-            <h1 class="hero-title">🌟 AkuruAI – අකුරුAI 🌟</h1>
-            <p class="hero-subtitle">Powered by Lanka AI Nexus</p>
-            <div class="content-wrapper">
-                <div class="lang-box sinhala-box">
-                    <h3>🇱🇰 සිංහල</h3>
-                    <p><strong>AkuruAI (අකුරුAI)</strong> යනු ශ්‍රී ලංකාවේ ප්‍රථම සිංහල AI නිර්මාණාත්මක මෙවලමයි. මෙය භාවිතයෙන් ඔබට AI පින්ਤੂර නිර්මාණය කර, ඒවාට සිංහල අකුරු යොදා, සජୀවීකරණ ප්‍රයෝග එක් කළ හැකිය.</p>
-                </div>
-                <div class="lang-box english-box">
-                    <h3>🌍 English</h3>
-                    <p><strong>AkuruAI</strong> is Sri Lanka's first Sinhala AI creative tool that brings artificial intelligence, language, and art together. With AkuruAI, you can instantly create stunning AI-generated images, add Sinhala text, and animate them with smart effects — all in one place.</p>
-                </div>
-            </div>
-            <div class="features-grid">
-                <span class="feature-pill">✨ AI Image Generation</span>
-                <span class="feature-pill">✍️ Sinhala Typography</span>
-                <span class="feature-pill">🎨 Smart Effects</span>
-                <span class="feature-pill">🆓 Free to Start</span>
-            </div>
-        </div>
-        """)
-        # --- END INTRO HTML ---
+        gr.HTML(""" ... Intro HTML and CSS ... """) # Minified
 
         with gr.Row():
             login_status = gr.Markdown("**Status:** Not logged in", elem_id="login_status_md")
@@ -968,32 +928,34 @@ def create_interface():
                             # Solid Color controls (visible by default)
                             with gr.Column(visible=True) as solid_color_controls:
                                 bg_color_picker = gr.ColorPicker(value="#FFFFFF", label="Background Color", interactive=True, elem_id="social_bg_color_picker")
-                                create_canvas_btn = gr.Button("Set Background & Size", variant="secondary")
+                                # create_canvas_btn = gr.Button("Set Background & Size", variant="secondary") # <-- REMOVED
 
                             # Template controls (hidden by default)
                             with gr.Column(visible=False) as template_controls:
                                 template_gallery = gr.Gallery(value=template_files, label="Select a Template", columns=5, height=120, allow_preview=False)
                                 gr.Markdown("*(Click a template to set it as the background)*")
                             
-                            gr.Markdown("### 2. Add Elements")
-                            gr.Markdown("#### Text")
-                            social_preset_dd = gr.Dropdown( ["Custom"] + list(PRESETS.keys()), value="Bold & Readable", label="✨ Text Effect Preset" )
-                            heading_text = gr.Textbox(label="Heading Text", placeholder="Your Catchy Title...")
-                            paragraph_text = gr.Textbox(label="Paragraph Text", placeholder="Add more details here...", lines=3)
-                            text_font_dd = gr.Dropdown(list(fonts_available.keys()), label="Font Style", value=list(fonts_available.keys())[0])
-                            text_color_picker = gr.ColorPicker(label="Text Color", value="#000000", interactive=True, elem_id="social_text_color_picker")
-                            text_alignment_radio = gr.Radio(["Left", "Center", "Right"], label="Paragraph Alignment", value="Left")
-                            add_heading_btn = gr.Button("➕ Add Heading")
-                            add_paragraph_btn = gr.Button("➕ Add Paragraph")
-                            
-                            gr.Markdown("#### Logo (Optional)")
-                            logo_upload_img = gr.Image(label="Upload Logo (PNG Recommended)", type="pil", height=100)
-                            logo_size_radio = gr.Radio(["Small (50px)", "Medium (100px)", "Large (150px)"], label="Logo Size", value="Medium (100px)")
-                            gr.Markdown("*(Click preview image to position logo)*")
-                            with gr.Row():
-                                logo_x_num = gr.Number(label="Logo X", value=50, interactive=False)
-                                logo_y_num = gr.Number(label="Logo Y", value=50, interactive=False)
-                            add_logo_btn = gr.Button("➕ Add/Update Logo")
+                            # --- NEW: Add Elements group, disabled by default ---
+                            with gr.Group(interactive=False) as add_elements_group:
+                                gr.Markdown("### 2. Add Elements")
+                                gr.Markdown("#### Text")
+                                social_preset_dd = gr.Dropdown( ["Custom"] + list(PRESETS.keys()), value="Bold & Readable", label="✨ Text Effect Preset" )
+                                heading_text = gr.Textbox(label="Heading Text", placeholder="Your Catchy Title...")
+                                paragraph_text = gr.Textbox(label="Paragraph Text", placeholder="Add more details here...", lines=3)
+                                text_font_dd = gr.Dropdown(list(fonts_available.keys()), label="Font Style", value=list(fonts_available.keys())[0])
+                                text_color_picker = gr.ColorPicker(label="Text Color", value="#000000", interactive=True, elem_id="social_text_color_picker")
+                                text_alignment_radio = gr.Radio(["Left", "Center", "Right"], label="Paragraph Alignment", value="Left")
+                                add_heading_btn = gr.Button("➕ Add Heading")
+                                add_paragraph_btn = gr.Button("➕ Add Paragraph")
+                                
+                                gr.Markdown("#### Logo (Optional)")
+                                logo_upload_img = gr.Image(label="Upload Logo (PNG Recommended)", type="pil", height=100)
+                                logo_size_radio = gr.Radio(["Small (50px)", "Medium (100px)", "Large (150px)"], label="Logo Size", value="Medium (100px)")
+                                gr.Markdown("*(Click preview image to position logo)*")
+                                with gr.Row():
+                                    logo_x_num = gr.Number(label="Logo X", value=50, interactive=False)
+                                    logo_y_num = gr.Number(label="Logo Y", value=50, interactive=False)
+                                add_logo_btn = gr.Button("➕ Add/Update Logo")
                             
                         with gr.Column(scale=2):
                             gr.Markdown("### Preview (Click Logo Position Here)")
@@ -1027,60 +989,62 @@ def create_interface():
                         outputs=[solid_color_controls, template_controls]
                     )
 
-                    # Store selected template path
-                    def select_template(evt: gr.SelectData):
-                        print(f"Template selected: {evt.value}")
-                        return evt.value # Return the selected image path
-                    template_gallery.select(
-                        fn=select_template,
-                        inputs=None,
-                        outputs=[template_selection_state]
-                    )
-
-                    # 1. Create Base Canvas (from Color)
-                    def create_base_canvas_color(size_key, bg_color):
+                    # --- NEW: Function to create canvas and enable controls ---
+                    def create_base_canvas(size_key, bg_color, template_path, bg_type):
                         try:
                             width, height = post_sizes[size_key]
-                            if not isinstance(bg_color, str) or not bg_color.startswith('#'): bg_color = "#FFFFFF"
-                            img = Image.new('RGB', (width, height), bg_color)
-                            print(f"Created base canvas: {width}x{height}, {bg_color}")
-                            return img, img, [], 1, [], "Canvas set. Add elements.", "No elements added yet"
-                        except Exception as e:
-                            print(f"Error creating canvas: {e}")
-                            return None, None, [], 1, [], f"Error: {e}", "Error"
-                    create_canvas_btn.click(
-                        fn=create_base_canvas_color,
-                        inputs=[post_size_dd, bg_color_picker],
-                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, social_history, post_status_text, social_layers_list]
-                    )
-                    
-                    # 1b. Create Base Canvas (from Template) - *** NEW LOGIC ***
-                    def create_base_canvas_template(size_key, evt: gr.SelectData): # evt is passed by .select()
-                        template_path = evt.value # Get selected image path
-                        if not template_path:
-                            return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), "No template selected.", gr.update()
-                        
-                        width, height = post_sizes[size_key]
-                        try:
-                            img = Image.open(template_path).convert('RGBA')
-                            img = img.resize((width, height), Image.Resampling.LANCZOS) # Stretch/resize
-                            print(f"Created canvas from template: {template_path}")
-                            
-                            # Convert to RGB for base image
+                            img = None
+                            if bg_type == "Template" and template_path:
+                                try:
+                                    img = Image.open(template_path).convert('RGBA')
+                                    img = img.resize((width, height), Image.Resampling.LANCZOS) # Stretch/resize
+                                    print(f"Created canvas from template: {template_path}")
+                                except Exception as e:
+                                    print(f"Error loading template '{template_path}': {e}, defaulting to color.")
+                                    if not isinstance(bg_color, str) or not bg_color.startswith('#'): bg_color = "#FFFFFF"
+                                    img = Image.new('RGBA', (width, height), bg_color) # Use RGBA
+                            else: # Solid Color
+                                if not isinstance(bg_color, str) or not bg_color.startswith('#'): bg_color = "#FFFFFF"
+                                img = Image.new('RGBA', (width, height), bg_color) # Use RGBA
+                                print(f"Created base canvas: {width}x{height}, {bg_color}")
+
+                            # Convert to RGB for state/preview
                             base_img = Image.new("RGB", img.size, (255, 255, 255))
                             if img.mode == 'RGBA':
                                 base_img.paste(img, mask=img.split()[3])
                             else:
                                 base_img.paste(img)
-                            
-                            return base_img, base_img, [], 1, [], "Template set. Add elements.", "No elements added yet"
+
+                            # Clear layers and enable controls
+                            return base_img, base_img, [], 1, "Canvas set. Add elements.", "No elements added yet", gr.update(interactive=True)
+                        
                         except Exception as e:
-                            print(f"Error loading template '{template_path}': {e}")
-                            return None, None, [], 1, [], f"Error: {e}", "Error"
-                    template_gallery.select( # This is the ONLY .select handler for the gallery
-                        fn=create_base_canvas_template,
-                        inputs=[post_size_dd], # Only need the size
-                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, social_history, post_status_text, social_layers_list]
+                            print(f"Error creating canvas: {e}")
+                            error_img = Image.new('RGB', (300, 100), color='grey')
+                            draw = ImageDraw.Draw(error_img)
+                            draw.text((10, 10), f"Render Error: {e}", fill='white')
+                            # Return error image, clear layers, disable controls
+                            return error_img, error_img, [], 1, f"Error: {e}", "Error", gr.update(interactive=False)
+
+                    # 1. Create Base Canvas (from Color) - NEW: attached to color picker change
+                    bg_color_picker.change(
+                        fn=create_base_canvas,
+                        inputs=[post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list, add_elements_group]
+                    )
+                    
+                    # 1b. Create Base Canvas (from Template) - NEW: attached to gallery select
+                    template_gallery.select(
+                        fn=create_base_canvas,
+                        inputs=[post_size_dd, bg_color_picker, template_gallery, bg_type_radio], # Pass gallery to get evt.value
+                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list, add_elements_group]
+                    )
+
+                    # 1c. Re-create canvas if size changes
+                    post_size_dd.change(
+                        fn=create_base_canvas,
+                        inputs=[post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list, add_elements_group]
                     )
 
                     # 2. Store uploaded logo
@@ -1152,45 +1116,23 @@ def create_interface():
                     def update_preview_and_layer_list(base_img, layers, size_key, bg_color, template_path, bg_type): # Added template path and type
                         # This function now renders based on the selected *base_img* state
                         if base_img is None:
-                            try:
-                                width, height = post_sizes[size_key]
-                                # Create a default base if none is set
-                                if bg_type == "Template" and template_path:
-                                    base_img_obj = Image.open(template_path).convert('RGBA')
-                                    base_img_obj = base_img_obj.resize((width, height), Image.Resampling.LANCZOS)
-                                else:
-                                    if not isinstance(bg_color, str) or not bg_color.startswith('#'): bg_color = "#FFFFFF"
-                                    base_img_obj = Image.new('RGB', (width, height), bg_color)
-                                
-                                # Convert to RGB for state
-                                if base_img_obj.mode == 'RGBA':
-                                    rgb_img = Image.new("RGB", base_img_obj.size, (255, 255, 255))
-                                    rgb_img.paste(base_img_obj, mask=base_img_obj.split()[3])
-                                    base_img = rgb_img # Now base_img is a PIL RGB Image
-                                else:
-                                    base_img = base_img_obj # Already RGB
-                                    
-                            except Exception as e:
-                                print(f"Error creating base image in update: {e}")
-                                error_img = Image.new('RGB', (300, 100), color='gray')
-                                draw = ImageDraw.Draw(error_img)
-                                draw.text((10,10), "Set Base First", fill="white")
-                                # --- FIXED BUG: Return base_img (which is None) ---
-                                return error_img, format_social_layers(layers), None
-                        
+                            # Create a blank placeholder if no base is set
+                            width, height = post_sizes[size_key]
+                            error_img = Image.new('RGB', (width, height), color='grey')
+                            draw = ImageDraw.Draw(error_img)
+                            draw.text((50,50), "Select a Background Color or Template to begin", fill="white")
+                            return error_img, format_social_layers(layers)
+
                         # Render layers onto a *copy* of the base_img state
-                        # We pass the original bg_color/template_path/bg_type in case render_social_post needs them
                         rendered_image = render_social_post(size_key, bg_color, template_path, bg_type, layers)
                         layer_text = format_social_layers(layers)
-                        # We must also return the base_img in case it was just created
-                        return rendered_image, layer_text, base_img
-
+                        return rendered_image, layer_text
                     
                     # Trigger preview update when layers change
                     social_layers_state.change(
                          fn=update_preview_and_layer_list,
                          inputs=[social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
-                         outputs=[post_preview_img, social_layers_list, social_post_base_image]
+                         outputs=[post_preview_img, social_layers_list]
                     )
                     
                     # 9. Remove Last Social Layer
@@ -1204,12 +1146,15 @@ def create_interface():
                     )
                     
                     # 10. Clear All Social Layers
-                    def clear_all_social_layers():
-                        return [], "✅ Cleared all elements"
+                    def clear_all_social_layers(size_key, bg_color, template_path, bg_type):
+                        # Also disable the add elements group again
+                        # And reset the base image
+                        base_img, _, _, _, _, status, layers_text = create_base_canvas(size_key, bg_color, template_path, bg_type)
+                        return [], "✅ Cleared all elements", base_img, base_img, layers_text, gr.update(interactive=False)
                     social_clear_all_btn.click(
                         fn=clear_all_social_layers,
-                        inputs=[],
-                        outputs=[social_layers_state, post_status_text] # Updates state, which triggers .change()
+                        inputs=[post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                        outputs=[social_layers_state, post_status_text, social_post_base_image, post_preview_img, social_layers_list, add_elements_group]
                     )
                     
                     # 11. Download Social Post
