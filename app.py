@@ -1243,6 +1243,10 @@ def create_interface():
                         add_heading_element,
                         [social_layers_state, social_next_layer_id, heading_text, heading_font_dd, heading_font_size, heading_color_picker, social_effect_type_state, social_preset_dd],
                         [social_layers_state, social_next_layer_id, post_status_text]
+                    ).then(
+                        lambda *args: update_preview_and_layer_list(*args),
+                        [social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                        [post_preview_img, social_layers_list]
                     )
                     
                     # 6. Add Paragraph Layer - FIXED VERSION
@@ -1264,10 +1268,16 @@ def create_interface():
                         new_layer = SocialLayer(id=next_id, type='text', properties=props)
                         updated_layers = current_layers + [new_layer]
                         return updated_layers, next_id + 1, "Paragraph added"
+                    
+                    # FIXED: Add paragraph with proper preview update
                     add_paragraph_btn.click(
                         add_paragraph_element,
                         [social_layers_state, social_next_layer_id, paragraph_text, paragraph_font_dd, paragraph_font_size, paragraph_color_picker, text_alignment_radio, social_effect_type_state, social_preset_dd],
                         [social_layers_state, social_next_layer_id, post_status_text]
+                    ).then(
+                        lambda *args: update_preview_and_layer_list(*args),
+                        [social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                        [post_preview_img, social_layers_list]
                     )
                     
                     # 7. Add Logo Layer
@@ -1283,6 +1293,10 @@ def create_interface():
                         add_logo_element,
                         [social_layers_state, social_next_layer_id, logo_image_state, logo_size_radio, logo_x_num, logo_y_num],
                         [social_layers_state, social_next_layer_id, post_status_text]
+                    ).then(
+                        lambda *args: update_preview_and_layer_list(*args),
+                        [social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                        [post_preview_img, social_layers_list]
                     )
                     
                     # 8. Update preview function (triggered by .change() below) - FIXED VERSION
