@@ -1,4 +1,3 @@
-"""
 Sinhala Text Creator - COMPLETE VERSION WITH ADMIN DASHBOARD AND ADVANCED EFFECTS
 ==================================================================================
 Full working version with background/template selector and layer management
@@ -770,7 +769,7 @@ def create_interface():
                     <h3>🇱🇰 සිංහල</h3>
                     <p>
                         <strong>AkuruAI (අකුරුAI)</strong> යනු ශ්‍රී ලංකාවේ ප්‍රථම සිංහල AI නිර්මාණාත්මක මෙවලමයි.
-                        මෙය භාවිතයෙන් ඔබට AI පින්තූර නිර්මාණය කර, ඒවාට සිංහල අකුරු යොදා, සජୀවීකරණ ප්‍රයෝග එක් කළ හැකිය.
+                        මෙය භාවිතයෙන් ඔබට AI පින්තූර නිර්මාණය කර, ඒවාට සිංහල අකුරු යොදා, සජීවීකරණ ප්‍රයෝග එක් කළ හැකිය.
                     </p>
                 </div>
                 <div class="lang-box english-box">
@@ -1055,14 +1054,41 @@ def create_interface():
                         outputs=[solid_color_controls, template_controls]
                     )
 
-                    # Store selected template path
+                    # Store selected template path - FIXED VERSION
                     def select_template(evt: gr.SelectData):
                         print(f"Template selected: {evt.value}")
-                        return evt.value # Return the selected image path
+                        return evt.value
                     template_gallery.select(
                         fn=select_template,
                         inputs=None,
                         outputs=[template_selection_state]
+                    )
+
+                    # Create base from template - FIXED VERSION
+                    def create_base_canvas_template(size_key, template_path):
+                        if not template_path:
+                            return None, None, [], 1, [], "No template selected.", "No elements added yet"
+                        
+                        try:
+                            width, height = post_sizes[size_key]
+                            img = Image.open(template_path).convert('RGBA')
+                            img = img.resize((width, height), Image.Resampling.LANCZOS)
+                            print(f"Created canvas from template: {template_path}")
+                            
+                            # Convert to RGB for base image
+                            base_img = Image.new("RGB", img.size, (255, 255, 255))
+                            base_img.paste(img, mask=img.split()[3] if img.mode == 'RGBA' else None)
+                            
+                            return base_img, base_img, [], 1, [], "Template set. Add elements.", "No elements added yet"
+                        except Exception as e:
+                            print(f"Error loading template '{template_path}': {e}")
+                            return None, None, [], 1, [], f"Error: {e}", "Error"
+
+                    # Connect template selection to create base - FIXED VERSION
+                    template_selection_state.change(
+                        fn=create_base_canvas_template,
+                        inputs=[post_size_dd, template_selection_state],
+                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, social_history, post_status_text, social_layers_list]
                     )
 
                     # 1. Create Base Canvas (from Color)
@@ -1082,31 +1108,6 @@ def create_interface():
                         outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, social_history, post_status_text, social_layers_list]
                     )
                     
-                    # 1b. Create Base Canvas (from Template)
-                    def create_base_canvas_template(size_key, template_path, evt: gr.SelectData):
-                        template_path = evt.value # Get selected image path
-                        if not template_path:
-                            return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), "No template selected.", gr.update()
-                        
-                        width, height = post_sizes[size_key]
-                        try:
-                            img = Image.open(template_path).convert('RGBA')
-                            img = img.resize((width, height), Image.Resampling.LANCZOS) # Stretch/resize
-                            print(f"Created canvas from template: {template_path}")
-                            # Convert to RGB for base image
-                            base_img = Image.new("RGB", img.size, (255, 255, 255))
-                            base_img.paste(img, mask=img.split()[3] if img.mode == 'RGBA' else None)
-                            
-                            return base_img, base_img, [], 1, [], "Template set. Add elements.", "No elements added yet"
-                        except Exception as e:
-                            print(f"Error loading template '{template_path}': {e}")
-                            return None, None, [], 1, [], f"Error: {e}", "Error"
-                    template_gallery.select(
-                        fn=create_base_canvas_template,
-                        inputs=[post_size_dd, template_selection_state], # Pass size and selected template
-                        outputs=[social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, social_history, post_status_text, social_layers_list]
-                    )
-
                     # 2. Store uploaded logo
                     def store_logo(img):
                         print("Logo uploaded and stored in state.")
@@ -1283,7 +1284,7 @@ def create_interface():
              - 📤 අසීමිත උඩුගත කිරීම් (නොමිලේ!) (Unlimited uploads FREE!)
              - ✍️ අසීමිත පෙළ ආවරණ (නොමිලේ!) (Unlimited text overlays FREE!)
              - 🎨 නියොන්, ක්‍රෝම්, ෆයර්, 3D සහ තවත්! (Advanced text effects: Neon, Chrome, Fire, 3D & more!)
-             - 🔄 මාසිකව ස්වයංක්‍රීයව යළի පිහිටුවේ (Auto-resets monthly)
+             - 🔄 මාසිකව ස්වයංක්‍රීයව යළි පිහිටුවේ (Auto-resets monthly)
              """)
 
         # --- FOOTER SECTION ---
