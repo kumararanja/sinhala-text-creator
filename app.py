@@ -381,12 +381,34 @@ def apply_gradient_effect(image, draw, text, font, x, y, color1, color2):
     gradient.putalpha(mask)
     image.paste(gradient, (x, y), gradient)
 
-def render_social_text_simple(draw, text, font, x, y, color, anchor):
-    """Basic text drawing for social posts"""
-    draw.text((x, y), text, fill=color, font=font, anchor=anchor)
+def render_text_layer(draw, layer, font):
+    """Basic text rendering for Tab 2"""
+    text_rgb = tuple(int(layer.text_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    if layer.outline_width > 0:
+        outline_rgb = tuple(int(layer.outline_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        for dx in [-layer.outline_width, 0, layer.outline_width]:
+            for dy in [-layer.outline_width, 0, layer.outline_width]:
+                if dx != 0 or dy != 0:
+                    draw.text((layer.x + dx, layer.y + dy), layer.text, font=font, fill=outline_rgb)
+    draw.text((layer.x, layer.y), layer.text, font=font, fill=text_rgb)
+
+def render_text_layer_advanced(draw, layer, font, image=None):
+    """Advanced text rendering with effects for Tab 2"""
+    if layer.effect_type == "neon":
+        apply_neon_effect(draw, layer.text, font, layer.x, layer.y, layer.text_color, layer.outline_color)
+    elif layer.effect_type == "chrome":
+        apply_chrome_effect(draw, layer.text, font, layer.x, layer.y)
+    elif layer.effect_type == "fire":
+        apply_fire_effect(draw, layer.text, font, layer.x, layer.y)
+    elif layer.effect_type == "3d":
+        apply_3d_shadow_effect(draw, layer.text, font, layer.x, layer.y, layer.text_color, layer.outline_color)
+    elif layer.effect_type == "gradient" and image:
+        apply_gradient_effect(image, draw, layer.text, font, layer.x, layer.y, layer.text_color, layer.outline_color)
+    else:
+        render_text_layer(draw, layer, font)
 
 def render_social_text_layer(draw, props, image=None):
-    """Renderer for social post text layers, using effect functions"""
+    """Renderer for social post text layers, using effect functions - FIXED VERSION"""
     font_path = fonts_available.get(props.get('font_key'), list(fonts_available.values())[0])
     
     # Use custom font size if provided, otherwise calculate based on image size
@@ -406,27 +428,56 @@ def render_social_text_layer(draw, props, image=None):
     is_heading = props.get('is_heading', False)
     effect = props.get('effect_type', 'normal')
     outline_color = props.get('outline_color', '#000000')
-    text_y = 0
-    text_x = 0
-    text_anchor = "la"
     
+    width, height = image.size
+    
+    # Calculate text positioning - FIXED: Better positioning for paragraphs
     if is_heading:
-        bbox = draw.textbbox((0,0), text, font=font_obj, anchor="lt")
+        # For heading - center at top
+        bbox = draw.textbbox((0, 0), text, font=font_obj, anchor="lt")
         text_width = bbox[2] - bbox[0]
-        text_x = (width - text_width) // 2
-        text_y = int(image.height * 0.1)
-        text_anchor = "la"
+        text_x = width // 2
+        text_y = int(height * 0.1)  # 10% from top
+        text_anchor = "mt"  # Middle top
     else:
-        text_y = int(image.height * 0.25)
-        text_x = int(width * 0.1)
+        # For paragraph - start higher up (15% from top instead of 25%)
+        text_y = int(height * 0.15)
+        
+        # Handle alignment
         if alignment == "Center":
-            text_anchor = "ma"
+            text_anchor = "mt"
             text_x = width // 2
         elif alignment == "Right":
-            text_anchor = "ra"
+            text_anchor = "rt"
             text_x = int(width * 0.9)
+        else:  # Left alignment
+            text_anchor = "lt"
+            text_x = int(width * 0.1)
     
-    # Call effect renderers
+    # Handle multi-line text for paragraphs
+    if not is_heading and '\n' in text:
+        lines = text.split('\n')
+        line_height = font_size + 10  # Add spacing between lines
+        
+        for i, line in enumerate(lines):
+            current_y = text_y + (i * line_height)
+            
+            # Call effect renderers for each line
+            if effect == "neon":
+                apply_neon_effect(draw, line, font_obj, text_x, current_y, color, outline_color)
+            elif effect == "chrome":
+                apply_chrome_effect(draw, line, font_obj, text_x, current_y)
+            elif effect == "fire":
+                apply_fire_effect(draw, line, font_obj, text_x, current_y)
+            elif effect == "3d":
+                apply_3d_shadow_effect(draw, line, font_obj, text_x, current_y, color, outline_color)
+            elif effect == "gradient" and image:
+                apply_gradient_effect(image, draw, line, font_obj, text_x, current_y, color, outline_color)
+            else:
+                draw.text((text_x, current_y), line, fill=color, font=font_obj, anchor=text_anchor)
+        return
+    
+    # Single line text or heading
     if effect == "neon":
         apply_neon_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
     elif effect == "chrome":
