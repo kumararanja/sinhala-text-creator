@@ -650,6 +650,7 @@ def format_social_layers(social_layers: List[SocialLayer]) -> str:
 
 def create_interface():
     """Create the main Gradio interface"""
+    print("in create_interface")
 
     with gr.Blocks(title="Sinhala Text Creator", theme=gr.themes.Soft()) as demo:
 
@@ -853,7 +854,7 @@ def create_interface():
                     with gr.Row():
                         with gr.Column():
                             load_btn = gr.Button("🔄 Load Image from Tab 1", variant="primary", size="lg")
-                            preview = gr.Image(label="Click to position text", type="pil", interactive=True)
+                            preview = gr.Image(label="Click to position text", type="pil")
                             with gr.Row():
                                 x_coord = gr.Number(label="X Position", value=100, precision=0)
                                 y_coord = gr.Number(label="Y Position", value=100, precision=0)
@@ -877,7 +878,7 @@ def create_interface():
                                 shadow_blur = gr.Slider(0, 50, 20, label="Shadow/Glow Blur", step=1)
                                 opacity = gr.Slider(0, 100, 100, label="Text Opacity %", step=5)
                             add_btn = gr.Button("➕ ADD TEXT TO IMAGE", variant="primary", size="lg")
-                            layers_list = gr.Textbox( label="📝 Text Layers", lines=5, interactive=False, value="No layers yet" )
+                            layers_list = gr.Textbox( label="📝 Text Layers", lines=5, value="No layers yet" )
                             with gr.Row():
                                 remove_last_btn = gr.Button("🔙 Remove Last", variant="secondary")
                                 undo_btn = gr.Button("↩️ Undo", variant="secondary")
@@ -1025,9 +1026,9 @@ def create_interface():
                             
                         with gr.Column(scale=2):
                             gr.Markdown("### Preview (Click Logo Position Here)")
-                            post_preview_img = gr.Image(label="Post Preview", interactive=True)
+                            post_preview_img = gr.Image(label="Post Preview")
                             post_status_text = gr.Textbox(label="Status", interactive=False)
-                            social_layers_list = gr.Textbox(label="📝 Elements", lines=5, interactive=False, value="No elements added yet")
+                            social_layers_list = gr.Textbox(label="📝 Elements", lines=5, value="No elements added yet")
                             with gr.Row():
                                 social_remove_last_btn = gr.Button("🔙 Remove Last Element", variant="secondary")
                                 social_clear_all_btn = gr.Button("🗑️ Clear All Elements", variant="stop")
