@@ -1,3 +1,4 @@
+"""
 Sinhala Text Creator - COMPLETE VERSION WITH ADMIN DASHBOARD AND ADVANCED EFFECTS
 ==================================================================================
 Full working version with background/template selector and layer management
