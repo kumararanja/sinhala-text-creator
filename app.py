@@ -1058,8 +1058,17 @@ def create_interface():
 
                     # Store selected template path - FIXED VERSION
                     def select_template(evt: gr.SelectData):
-                        print(f"Template selected: {evt.value}")
-                        return evt.value
+                        print(f"Template selected: {evt.value}, type: {type(evt.value)}")
+                        # Handle both string paths and dictionary responses
+                        if isinstance(evt.value, dict):
+                            # Extract the file path from the dictionary
+                            selected_path = evt.value.get('name') or evt.value.get('data') or list(evt.value.values())[0]
+                            print(f"Extracted path from dict: {selected_path}")
+                            return selected_path
+                        else:
+                            # It's already a string path
+                            return evt.value
+
                     template_gallery.select(
                         fn=select_template,
                         inputs=None,
@@ -1068,23 +1077,42 @@ def create_interface():
 
                     # Create base from template - FIXED VERSION
                     def create_base_canvas_template(size_key, template_path):
+                        print(f"Creating canvas from template: {template_path}, type: {type(template_path)}")
+                        
                         if not template_path:
                             return None, None, [], 1, [], "No template selected.", "No elements added yet"
                         
+                        # Handle dictionary responses
+                        if isinstance(template_path, dict):
+                            template_path = template_path.get('name') or template_path.get('data') or list(template_path.values())[0]
+                            print(f"Converted dict to path: {template_path}")
+                        
                         try:
                             width, height = post_sizes[size_key]
+                            
+                            # Ensure the path is a string and exists
+                            if not isinstance(template_path, str) or not os.path.exists(template_path):
+                                print(f"Invalid template path: {template_path}")
+                                # Create a default colored background instead
+                                img = Image.new('RGB', (width, height), "#FFFFFF")
+                                return img, img, [], 1, [], "Template not found. Using white background.", "No elements added yet"
+                            
                             img = Image.open(template_path).convert('RGBA')
                             img = img.resize((width, height), Image.Resampling.LANCZOS)
-                            print(f"Created canvas from template: {template_path}")
+                            print(f"Successfully loaded template: {template_path}")
                             
                             # Convert to RGB for base image
                             base_img = Image.new("RGB", img.size, (255, 255, 255))
                             base_img.paste(img, mask=img.split()[3] if img.mode == 'RGBA' else None)
                             
                             return base_img, base_img, [], 1, [], "Template set. Add elements.", "No elements added yet"
+                            
                         except Exception as e:
                             print(f"Error loading template '{template_path}': {e}")
-                            return None, None, [], 1, [], f"Error: {e}", "Error"
+                            # Fallback to white background
+                            width, height = post_sizes[size_key]
+                            img = Image.new('RGB', (width, height), "#FFFFFF")
+                            return img, img, [], 1, [], f"Error loading template. Using white background.", "No elements added yet"
 
                     # Connect template selection to create base - FIXED VERSION
                     template_selection_state.change(
@@ -1428,5 +1456,4 @@ if __name__ == "__main__":
 
     demo = create_interface()
     # Updated port to 8001
-
     demo.launch(server_name="0.0.0.0", server_port=8000)
