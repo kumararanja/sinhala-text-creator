@@ -1237,72 +1237,42 @@ def create_interface():
                         return evt.index[0], evt.index[1], f"✅ Paragraph position set to ({evt.index[0]}, {evt.index[1]})"
                     post_preview_img.select(set_paragraph_pos, None, [paragraph_x_num, paragraph_y_num, post_status_text])
                     
-                    # 4. Update controls from Social Preset - FIXED VERSION
+                    # 4. Update controls from Social Preset
                     def update_social_controls_from_preset(preset_name):
                         if preset_name in PRESETS:
                             settings = PRESETS[preset_name]
-                            return (
-                                settings.get("text_color", "#000000"), 
-                                settings.get("effect_type", "normal"),
-                                settings.get("text_color", "#000000")  # Also update paragraph color
-                            )
-                        return gr.update(), gr.update(), gr.update()
+                            return ( settings.get("text_color", "#000000"), settings.get("effect_type", "normal") )
+                        return gr.update(), gr.update()
+                    social_preset_dd.change(update_social_controls_from_preset, [social_preset_dd], [heading_color_picker, social_effect_type_state])
                     
-                    social_preset_dd.change(
-                        update_social_controls_from_preset, 
-                        [social_preset_dd], 
-                        [heading_color_picker, social_effect_type_state, paragraph_color_picker]
-                    )
-                    
-                    # 5. Add Heading Layer - FIXED VERSION
+                    # 5. Add Heading Layer
                     def add_heading_element(current_layers, next_id, head_txt, font_key, font_size, txt_color, effect_type, preset_name):
                         if not head_txt.strip(): 
                             return current_layers, next_id, "Enter heading text"
-                        
-                        # Get preset settings if available
-                        outline_color = "#000000"
-                        if preset_name in PRESETS: 
-                            preset_settings = PRESETS[preset_name]
-                            outline_color = preset_settings.get('outline_color', '#000000')
-                            # Use preset effect type if not manually overridden
-                            if effect_type == "normal":
-                                effect_type = preset_settings.get('effect_type', 'normal')
-                        
                         props = {
                             'type': 'text', 
                             'text': head_txt, 
                             'font_key': font_key, 
                             'font_size': int(font_size),
                             'color': txt_color, 
-                            'outline_color': outline_color,
                             'is_heading': True, 
                             'effect_type': effect_type
                         }
-                        
+                        if preset_name in PRESETS: 
+                            props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000')
                         new_layer = SocialLayer(id=next_id, type='text', properties=props)
                         updated_layers = current_layers + [new_layer]
                         return updated_layers, next_id + 1, "Heading added"
-                    
                     add_heading_btn.click(
                         add_heading_element,
                         [social_layers_state, social_next_layer_id, heading_text, heading_font_dd, heading_font_size, heading_color_picker, social_effect_type_state, social_preset_dd],
                         [social_layers_state, social_next_layer_id, post_status_text]
                     )
                     
-                    # 6. Add Paragraph Layer - FIXED VERSION
+                    # 6. Add Paragraph Layer - UPDATED FOR CLICK POSITIONING
                     def add_paragraph_element(current_layers, next_id, para_txt, font_key, font_size, txt_color, align, effect_type, preset_name, x, y):
                         if not para_txt.strip(): 
                             return current_layers, next_id, "Enter paragraph text"
-                        
-                        # Get preset settings if available
-                        outline_color = "#000000"
-                        if preset_name in PRESETS: 
-                            preset_settings = PRESETS[preset_name]
-                            outline_color = preset_settings.get('outline_color', '#000000')
-                            # Use preset effect type if not manually overridden
-                            if effect_type == "normal":
-                                effect_type = preset_settings.get('effect_type', 'normal')
-                        
                         props = {
                             'type': 'text', 
                             'text': para_txt, 
@@ -1312,15 +1282,14 @@ def create_interface():
                             'align': align, 
                             'is_heading': False, 
                             'effect_type': effect_type,
-                            'outline_color': outline_color,
-                            'x': int(x),  # Ensure integer values
-                            'y': int(y)   # Ensure integer values
+                            'x': x,  # Use clicked position
+                            'y': y   # Use clicked position
                         }
-                        
+                        if preset_name in PRESETS: 
+                            props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000')
                         new_layer = SocialLayer(id=next_id, type='text', properties=props)
                         updated_layers = current_layers + [new_layer]
                         return updated_layers, next_id + 1, f"Paragraph added at position ({x}, {y})"
-                    
                     add_paragraph_btn.click(
                         add_paragraph_element,
                         [social_layers_state, social_next_layer_id, paragraph_text, paragraph_font_dd, paragraph_font_size, paragraph_color_picker, text_alignment_radio, social_effect_type_state, social_preset_dd, paragraph_x_num, paragraph_y_num],
