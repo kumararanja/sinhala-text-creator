@@ -481,7 +481,12 @@ def render_social_text_layer(draw, props, image=None):
             elif effect == "gradient" and image:
                 apply_gradient_effect(image, draw, line, font_obj, text_x, current_y, color, outline_color)
             else:
-                draw.text((text_x, current_y), line, fill=color, font=font_obj, anchor=text_anchor)
+                # Convert hex color to RGB tuple
+                if isinstance(color, str) and color.startswith('#'):
+                    color_rgb = tuple(int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+                else:
+                    color_rgb = (0, 0, 0)
+                draw.text((text_x, current_y), line, fill=color_rgb, font=font_obj, anchor=text_anchor)
         return
     
     # Single line text or heading
@@ -496,7 +501,12 @@ def render_social_text_layer(draw, props, image=None):
     elif effect == "gradient" and image:
         apply_gradient_effect(image, draw, text, font_obj, text_x, text_y, color, outline_color)
     else:
-        draw.text((text_x, text_y), text, fill=color, font=font_obj, anchor=text_anchor)
+        # Convert hex color to RGB tuple
+        if isinstance(color, str) and color.startswith('#'):
+            color_rgb = tuple(int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        else:
+            color_rgb = (0, 0, 0)
+        draw.text((text_x, text_y), text, fill=color_rgb, font=font_obj, anchor=text_anchor)
 
 # --- RENDERER FOR TAB 2 ---
 def render_all_layers(base_image, layers: List[TextLayer]):
