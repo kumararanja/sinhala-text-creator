@@ -411,6 +411,12 @@ def render_social_text_layer(draw, props, image=None):
     """Renderer for social post text layers, using effect functions - FIXED VERSION"""
     font_path = fonts_available.get(props.get('font_key'), list(fonts_available.values())[0])
     
+    # HARDCODE COLORS FOR TESTING
+    if props.get('is_heading'):
+        color_rgb = (255, 0, 0)  # RED for headings
+    else:
+        color_rgb = (0, 0, 255)  # BLUE for paragraphs
+
     # Use custom font size if provided, otherwise calculate based on image size
     custom_font_size = props.get('font_size')
     if custom_font_size:
