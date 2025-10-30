@@ -314,10 +314,19 @@ class SocialLayer: # For Tab 4
 # ============================================
 # ADVANCED RENDERING FUNCTIONS (for Tab 2 & 4)
 # ============================================
+def hex_to_rgb(hex_color):
+    """Convert hex color to RGB tuple"""
+    hex_color = hex_color.lstrip('#')
+    if len(hex_color) == 6:
+        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    elif len(hex_color) == 3:
+        return tuple(int(hex_color[i:i+1]*2, 16) for i in (0, 1, 2))
+    return (0, 0, 0)
+
 def apply_neon_effect(draw, text, font, x, y, base_color, glow_color, intensity=3):
     """Create neon glow effect"""
-    base_rgb = tuple(int(base_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-    glow_rgb = tuple(int(glow_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    base_rgb = hex_to_rgb(base_color)
+    glow_rgb = hex_to_rgb(glow_color)
     for glow_size in range(intensity*5, 0, -1):
         alpha = int(120 * (glow_size / (intensity*5)))
         for angle in range(0, 360, 30):
@@ -354,8 +363,8 @@ def apply_fire_effect(draw, text, font, x, y):
 
 def apply_3d_shadow_effect(draw, text, font, x, y, text_color, shadow_color, depth=5):
     """Create 3D shadow effect"""
-    text_rgb = tuple(int(text_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-    shadow_rgb = tuple(int(shadow_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    text_rgb = hex_to_rgb(text_color)
+    shadow_rgb = hex_to_rgb(shadow_color)
     for i in range(depth, 0, -1):
         draw.text((x + i*2, y + i*2), text, font=font, fill=shadow_rgb + (200,))
     draw.text((x, y), text, font=font, fill=text_rgb + (255,))
@@ -367,8 +376,8 @@ def apply_gradient_effect(image, draw, text, font, x, y, color1, color2):
     text_height = bbox[3] - bbox[1]
     gradient = Image.new('RGBA', (text_width, text_height), (0, 0, 0, 0))
     grad_draw = ImageDraw.Draw(gradient)
-    c1_rgb = tuple(int(color1.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-    c2_rgb = tuple(int(color2.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    c1_rgb = hex_to_rgb(color1)
+    c2_rgb = hex_to_rgb(color2)
     for i in range(text_height):
         ratio = i / text_height
         r = int(c1_rgb[0] * (1 - ratio) + c2_rgb[0] * ratio)
@@ -383,9 +392,9 @@ def apply_gradient_effect(image, draw, text, font, x, y, color1, color2):
 
 def render_text_layer(draw, layer, font):
     """Basic text rendering for Tab 2"""
-    text_rgb = tuple(int(layer.text_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    text_rgb = hex_to_rgb(layer.text_color)
     if layer.outline_width > 0:
-        outline_rgb = tuple(int(layer.outline_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        outline_rgb = hex_to_rgb(layer.outline_color)
         for dx in [-layer.outline_width, 0, layer.outline_width]:
             for dy in [-layer.outline_width, 0, layer.outline_width]:
                 if dx != 0 or dy != 0:
@@ -411,12 +420,6 @@ def render_social_text_layer(draw, props, image=None):
     """Renderer for social post text layers, using effect functions - FIXED VERSION"""
     font_path = fonts_available.get(props.get('font_key'), list(fonts_available.values())[0])
     
-    # HARDCODE COLORS FOR TESTING
-    if props.get('is_heading'):
-        color_rgb = (255, 0, 0)  # RED for headings
-    else:
-        color_rgb = (0, 0, 255)  # BLUE for paragraphs
-
     # Use custom font size if provided, otherwise calculate based on image size
     custom_font_size = props.get('font_size')
     if custom_font_size:
@@ -437,14 +440,14 @@ def render_social_text_layer(draw, props, image=None):
     
     width, height = image.size
     
-    # Calculate text positioning - FIXED: Use custom x,y if provided for BOTH heading and paragraph
+    # Calculate text positioning - FIXED: Use custom x,y if provided
     if 'x' in props and 'y' in props:
-        # Use custom position from click for BOTH heading and paragraph
+        # Use custom position from click
         text_x = props['x']
         text_y = props['y']
         text_anchor = "lt"  # Left top anchor for custom positioning
     else:
-        # Use default positioning (fallback)
+        # Use default positioning
         if is_heading:
             # For heading - center at top
             bbox = draw.textbbox((0, 0), text, font=font_obj, anchor="lt")
@@ -487,11 +490,8 @@ def render_social_text_layer(draw, props, image=None):
             elif effect == "gradient" and image:
                 apply_gradient_effect(image, draw, line, font_obj, text_x, current_y, color, outline_color)
             else:
-                # Convert hex color to RGB tuple
-                if isinstance(color, str) and color.startswith('#'):
-                    color_rgb = tuple(int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-                else:
-                    color_rgb = (0, 0, 0)
+                # Normal effect - use the color directly
+                color_rgb = hex_to_rgb(color)
                 draw.text((text_x, current_y), line, fill=color_rgb, font=font_obj, anchor=text_anchor)
         return
     
@@ -507,11 +507,8 @@ def render_social_text_layer(draw, props, image=None):
     elif effect == "gradient" and image:
         apply_gradient_effect(image, draw, text, font_obj, text_x, text_y, color, outline_color)
     else:
-        # Convert hex color to RGB tuple
-        if isinstance(color, str) and color.startswith('#'):
-            color_rgb = tuple(int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-        else:
-            color_rgb = (0, 0, 0)
+        # Normal effect - use the color directly
+        color_rgb = hex_to_rgb(color)
         draw.text((text_x, text_y), text, fill=color_rgb, font=font_obj, anchor=text_anchor)
 
 # --- RENDERER FOR TAB 2 ---
@@ -542,7 +539,6 @@ def render_all_layers(base_image, layers: List[TextLayer]):
 
 
 # --- RENDERER FOR TAB 4 (SOCIAL POST) ---
-# --- MOVED post_sizes dictionary TO GLOBAL SCOPE ---
 post_sizes = {
     "Instagram Square (1:1)": (1080, 1080),
     "Instagram Story (9:16)": (1080, 1920),
@@ -1080,14 +1076,10 @@ def create_interface():
                     social_effect_type_state = gr.State("normal")
                     template_selection_state = gr.State(None)
                     
-                    # NEW: Add state for positioning
-                    heading_x_state = gr.State(0)
-                    heading_y_state = gr.State(0)
+                    # NEW: Add state for paragraph positioning
                     paragraph_x_state = gr.State(0)
                     paragraph_y_state = gr.State(0)
-                    logo_x_state = gr.State(0)
-                    logo_y_state = gr.State(0)
-                    current_positioning_mode = gr.State("paragraph")  # Default to paragraph positioning
+                    paragraph_positioning_mode = gr.State(False)  # Track if we're in paragraph positioning mode
 
                     with gr.Row():
                         with gr.Column(scale=1):
@@ -1108,15 +1100,7 @@ def create_interface():
                             
                             gr.Markdown("### 2. Add Elements")
                             
-                            # Positioning Mode Selection
-                            gr.Markdown("#### 🎯 Positioning Mode")
-                            positioning_mode_radio = gr.Radio(
-                                ["Heading", "Paragraph", "Logo"], 
-                                value="Paragraph", 
-                                label="Select what to position when clicking image"
-                            )
-                            
-                            # Heading Controls - UPDATED FOR CLICK POSITIONING
+                            # Heading Controls
                             gr.Markdown("#### Heading")
                             social_preset_dd = gr.Dropdown( ["Custom"] + list(PRESETS.keys()), value="Bold & Readable", label="✨ Text Effect Preset" )
                             heading_text = gr.Textbox(label="Heading Text", placeholder="Your Catchy Title...")
@@ -1125,12 +1109,7 @@ def create_interface():
                                 heading_font_size = gr.Slider(20, 200, 60, label="Heading Font Size", step=5)
                             heading_color_picker = gr.ColorPicker(label="Heading Color", value="#000000", interactive=True)
                             
-                            # NEW: Heading positioning controls
-                            with gr.Row():
-                                heading_x_num = gr.Number(label="Heading X", value=100, interactive=False)
-                                heading_y_num = gr.Number(label="Heading Y", value=100, interactive=False)
-                            
-                            add_heading_btn = gr.Button("➕ Add Heading at Position", variant="primary")
+                            add_heading_btn = gr.Button("➕ Add Heading", variant="primary")
                             
                             # Paragraph Controls - UPDATED FOR CLICK POSITIONING
                             gr.Markdown("#### Paragraph")
@@ -1146,19 +1125,18 @@ def create_interface():
                                 paragraph_x_num = gr.Number(label="Paragraph X", value=100, interactive=False)
                                 paragraph_y_num = gr.Number(label="Paragraph Y", value=100, interactive=False)
                             
+                            # UPDATED: Button to enable paragraph positioning mode
+                            enable_paragraph_position_btn = gr.Button("🎯 Click to Set Paragraph Position", variant="secondary")
                             add_paragraph_btn = gr.Button("➕ Add Paragraph at Position", variant="primary")
                             
-                            # Logo Controls - UPDATED FOR MULTIPLE LOGOS
                             gr.Markdown("#### Logo (Optional)")
                             logo_upload_img = gr.Image(label="Upload Logo (PNG Recommended)", type="pil", height=100)
                             logo_size_radio = gr.Radio(["Small (50px)", "Medium (100px)", "Large (150px)"], label="Logo Size", value="Medium (100px)")
-                            
-                            # NEW: Logo positioning controls
+                            gr.Markdown("*(Click preview image to position logo)*")
                             with gr.Row():
                                 logo_x_num = gr.Number(label="Logo X", value=50, interactive=False)
                                 logo_y_num = gr.Number(label="Logo Y", value=50, interactive=False)
-                            
-                            add_logo_btn = gr.Button("➕ Add Logo at Position", variant="primary")
+                            add_logo_btn = gr.Button("➕ Add/Update Logo")
                             
                         with gr.Column(scale=2):
                             gr.Markdown("### Preview (Click to Position Elements)")
@@ -1179,15 +1157,6 @@ def create_interface():
                                 social_download_status = gr.Textbox(label="Status", interactive=False)
                     
                     # --- Event Handlers for Social Post Tab ---
-                    
-                    # Update positioning mode
-                    def update_positioning_mode(mode):
-                        return mode.lower()
-                    positioning_mode_radio.change(
-                        update_positioning_mode,
-                        [positioning_mode_radio],
-                        [current_positioning_mode]
-                    )
                     
                     # Toggle visibility of background controls
                     def toggle_background_type(bg_type):
@@ -1270,66 +1239,82 @@ def create_interface():
                         return img
                     logo_upload_img.upload(store_logo, [logo_upload_img], [logo_image_state])
                     
-                    # 3. Set element positions based on current mode
-                    def set_element_pos(evt: gr.SelectData, current_mode):
-                        x, y = evt.index[0], evt.index[1]
-                        status_msg = f"✅ {current_mode.capitalize()} position set to ({x}, {y})"
-                        
-                        if current_mode == "heading":
-                            return x, y, gr.update(), gr.update(), gr.update(), gr.update(), status_msg
-                        elif current_mode == "paragraph":
-                            return gr.update(), gr.update(), x, y, gr.update(), gr.update(), status_msg
-                        elif current_mode == "logo":
-                            return gr.update(), gr.update(), gr.update(), gr.update(), x, y, status_msg
-                        else:
-                            return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), "Please select a positioning mode first"
+                    # 3. Set logo position
+                    def set_logo_pos(evt: gr.SelectData):
+                        return evt.index[0], evt.index[1]
+                    post_preview_img.select(set_logo_pos, None, [logo_x_num, logo_y_num])
                     
-                    post_preview_img.select(
-                        set_element_pos,
-                        [current_positioning_mode],
-                        [heading_x_num, heading_y_num, paragraph_x_num, paragraph_y_num, logo_x_num, logo_y_num, post_status_text]
-                    )
+                    # NEW: Set paragraph position
+                    def set_paragraph_pos(evt: gr.SelectData):
+                        return evt.index[0], evt.index[1], f"✅ Paragraph position set to ({evt.index[0]}, {evt.index[1]})"
+                    post_preview_img.select(set_paragraph_pos, None, [paragraph_x_num, paragraph_y_num, post_status_text])
                     
-                    # 4. Update controls from Social Preset
+                    # 4. Update controls from Social Preset - FIXED VERSION
                     def update_social_controls_from_preset(preset_name):
                         if preset_name in PRESETS:
                             settings = PRESETS[preset_name]
-                            return ( settings.get("text_color", "#000000"), settings.get("effect_type", "normal") )
-                        return gr.update(), gr.update()
-                    social_preset_dd.change(update_social_controls_from_preset, [social_preset_dd], [heading_color_picker, social_effect_type_state])
+                            return (
+                                settings.get("text_color", "#000000"), 
+                                settings.get("effect_type", "normal"),
+                                settings.get("text_color", "#000000")  # Also update paragraph color
+                            )
+                        return gr.update(), gr.update(), gr.update()
                     
-                    # 5. Add Heading Layer - UPDATED FOR CLICK POSITIONING
-                    def add_heading_element(current_layers, next_id, head_txt, font_key, font_size, txt_color, effect_type, preset_name, x, y):
+                    social_preset_dd.change(
+                        update_social_controls_from_preset, 
+                        [social_preset_dd], 
+                        [heading_color_picker, social_effect_type_state, paragraph_color_picker]
+                    )
+                    
+                    # 5. Add Heading Layer - FIXED VERSION
+                    def add_heading_element(current_layers, next_id, head_txt, font_key, font_size, txt_color, effect_type, preset_name):
                         if not head_txt.strip(): 
                             return current_layers, next_id, "Enter heading text"
+                        
+                        # Get preset settings if available
+                        outline_color = "#000000"
+                        if preset_name in PRESETS: 
+                            preset_settings = PRESETS[preset_name]
+                            outline_color = preset_settings.get('outline_color', '#000000')
+                            # Use preset effect type if not manually overridden
+                            if effect_type == "normal":
+                                effect_type = preset_settings.get('effect_type', 'normal')
+                        
                         props = {
                             'type': 'text', 
                             'text': head_txt, 
                             'font_key': font_key, 
                             'font_size': int(font_size),
                             'color': txt_color, 
+                            'outline_color': outline_color,
                             'is_heading': True, 
-                            'effect_type': effect_type,
-                            'x': x,  # Use clicked position
-                            'y': y   # Use clicked position
+                            'effect_type': effect_type
                         }
-                        if preset_name in PRESETS: 
-                            props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000')
-                        else:
-                            props['outline_color'] = '#000000'  # Default outline color
+                        
                         new_layer = SocialLayer(id=next_id, type='text', properties=props)
                         updated_layers = current_layers + [new_layer]
-                        return updated_layers, next_id + 1, f"Heading added at position ({x}, {y})"
+                        return updated_layers, next_id + 1, "Heading added"
+                    
                     add_heading_btn.click(
                         add_heading_element,
-                        [social_layers_state, social_next_layer_id, heading_text, heading_font_dd, heading_font_size, heading_color_picker, social_effect_type_state, social_preset_dd, heading_x_num, heading_y_num],
+                        [social_layers_state, social_next_layer_id, heading_text, heading_font_dd, heading_font_size, heading_color_picker, social_effect_type_state, social_preset_dd],
                         [social_layers_state, social_next_layer_id, post_status_text]
                     )
                     
-                    # 6. Add Paragraph Layer - UPDATED FOR CLICK POSITIONING
+                    # 6. Add Paragraph Layer - FIXED VERSION
                     def add_paragraph_element(current_layers, next_id, para_txt, font_key, font_size, txt_color, align, effect_type, preset_name, x, y):
                         if not para_txt.strip(): 
                             return current_layers, next_id, "Enter paragraph text"
+                        
+                        # Get preset settings if available
+                        outline_color = "#000000"
+                        if preset_name in PRESETS: 
+                            preset_settings = PRESETS[preset_name]
+                            outline_color = preset_settings.get('outline_color', '#000000')
+                            # Use preset effect type if not manually overridden
+                            if effect_type == "normal":
+                                effect_type = preset_settings.get('effect_type', 'normal')
+                        
                         props = {
                             'type': 'text', 
                             'text': para_txt, 
@@ -1339,31 +1324,30 @@ def create_interface():
                             'align': align, 
                             'is_heading': False, 
                             'effect_type': effect_type,
-                            'x': x,  # Use clicked position
-                            'y': y   # Use clicked position
+                            'outline_color': outline_color,
+                            'x': int(x),  # Ensure integer values
+                            'y': int(y)   # Ensure integer values
                         }
-                        if preset_name in PRESETS: 
-                            props['outline_color'] = PRESETS[preset_name].get('outline_color', '#000000')
-                        else:
-                            props['outline_color'] = '#000000'  # Default outline color
+                        
                         new_layer = SocialLayer(id=next_id, type='text', properties=props)
                         updated_layers = current_layers + [new_layer]
                         return updated_layers, next_id + 1, f"Paragraph added at position ({x}, {y})"
+                    
                     add_paragraph_btn.click(
                         add_paragraph_element,
                         [social_layers_state, social_next_layer_id, paragraph_text, paragraph_font_dd, paragraph_font_size, paragraph_color_picker, text_alignment_radio, social_effect_type_state, social_preset_dd, paragraph_x_num, paragraph_y_num],
                         [social_layers_state, social_next_layer_id, post_status_text]
                     )
                     
-                    # 7. Add Logo Layer - UPDATED FOR MULTIPLE LOGOS
+                    # 7. Add Logo Layer
                     def add_logo_element(current_layers, next_id, logo_obj, size_str, x, y):
                         if logo_obj is None: 
                             return current_layers, next_id, "Upload a logo first"
-                        # REMOVED: Don't filter out existing logos - allow multiple logos
+                        current_layers = [lyr for lyr in current_layers if lyr.type != 'logo']
                         props = {'type': 'logo', 'logo_obj': logo_obj, 'size_str': size_str, 'x': x, 'y': y}
                         new_layer = SocialLayer(id=next_id, type='logo', properties=props)
                         updated_layers = current_layers + [new_layer]
-                        return updated_layers, next_id + 1, f"Logo added at position ({x}, {y})"
+                        return updated_layers, next_id + 1, "Logo added/updated"
                     add_logo_btn.click(
                         add_logo_element,
                         [social_layers_state, social_next_layer_id, logo_image_state, logo_size_radio, logo_x_num, logo_y_num],
@@ -1411,14 +1395,23 @@ def create_interface():
                             draw.text((10,10), f"Error: {str(e)[:50]}", fill="white")
                             return error_img, format_social_layers(layers)
                     
-                    # FIXED: Update preview when layers change
-                    def update_on_layers_change(layers, base_img, size_key, bg_color, template_path, bg_type):
-                        print(f"Layers changed: {len(layers)} layers")
-                        return update_preview_and_layer_list(base_img, layers, size_key, bg_color, template_path, bg_type)
-                    
+                    # Update the preview when layers change
                     social_layers_state.change(
-                         update_on_layers_change,
-                         [social_layers_state, social_post_base_image, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                         update_preview_and_layer_list,
+                         [social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                         [post_preview_img, social_layers_list]
+                    )
+                    
+                    # Also update when background settings change
+                    post_size_dd.change(
+                         update_preview_and_layer_list,
+                         [social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                         [post_preview_img, social_layers_list]
+                    )
+                    
+                    bg_color_picker.change(
+                         update_preview_and_layer_list,
+                         [social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
                          [post_preview_img, social_layers_list]
                     )
                     
