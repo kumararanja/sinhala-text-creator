@@ -316,11 +316,19 @@ class SocialLayer: # For Tab 4
 # ============================================
 def hex_to_rgb(hex_color):
     """Convert hex color to RGB tuple"""
+    if not hex_color or not isinstance(hex_color, str):
+        return (0, 0, 0)
     hex_color = hex_color.lstrip('#')
     if len(hex_color) == 6:
-        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        try:
+            return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        except:
+            return (0, 0, 0)
     elif len(hex_color) == 3:
-        return tuple(int(hex_color[i:i+1]*2, 16) for i in (0, 1, 2))
+        try:
+            return tuple(int(hex_color[i]*2, 16) for i in (0, 1, 2))
+        except:
+            return (0, 0, 0)
     return (0, 0, 0)
 
 def apply_neon_effect(draw, text, font, x, y, base_color, glow_color, intensity=3):
@@ -416,100 +424,82 @@ def render_text_layer_advanced(draw, layer, font, image=None):
     else:
         render_text_layer(draw, layer, font)
 
-def render_social_text_layer(draw, props, image=None):
-    """Renderer for social post text layers, using effect functions - FIXED VERSION"""
-    font_path = fonts_available.get(props.get('font_key'), list(fonts_available.values())[0])
-    
-    # Use custom font size if provided, otherwise calculate based on image size
-    custom_font_size = props.get('font_size')
-    if custom_font_size:
-        font_size = custom_font_size
-    else:
-        width, _ = image.size
-        heading_font_size = max(30, int(width / 18))
-        para_font_size = max(20, int(width / 35))
-        font_size = heading_font_size if props.get('is_heading') else para_font_size
-    
-    font_obj = ImageFont.truetype(font_path, font_size)
-    text = props.get('text', '')
-    color = props.get('color', '#000000')
-    alignment = props.get('align', 'Left')
-    is_heading = props.get('is_heading', False)
-    effect = props.get('effect_type', 'normal')
-    outline_color = props.get('outline_color', '#000000')
-    
-    width, height = image.size
-    
-    # Calculate text positioning - FIXED: Use custom x,y if provided
-    if 'x' in props and 'y' in props:
-        # Use custom position from click
-        text_x = props['x']
-        text_y = props['y']
-        text_anchor = "lt"  # Left top anchor for custom positioning
-    else:
-        # Use default positioning
-        if is_heading:
-            # For heading - center at top
-            bbox = draw.textbbox((0, 0), text, font=font_obj, anchor="lt")
-            text_width = bbox[2] - bbox[0]
-            text_x = width // 2
-            text_y = int(height * 0.1)  # 10% from top
-            text_anchor = "mt"  # Middle top
-        else:
-            # For paragraph - start higher up (15% from top instead of 25%)
-            text_y = int(height * 0.15)
-            
-            # Handle alignment
-            if alignment == "Center":
-                text_anchor = "mt"
-                text_x = width // 2
-            elif alignment == "Right":
-                text_anchor = "rt"
-                text_x = int(width * 0.9)
-            else:  # Left alignment
-                text_anchor = "lt"
-                text_x = int(width * 0.1)
-    
-    # Handle multi-line text for paragraphs
-    if not is_heading and '\n' in text:
-        lines = text.split('\n')
-        line_height = font_size + 10  # Add spacing between lines
+# ============================================
+# SIMPLIFIED SOCIAL POST RENDERING (FIXED COLOR HANDLING)
+# ============================================
+
+def render_social_text_layer_simple(draw, props, image=None):
+    """SIMPLIFIED VERSION - Just render text with color, no complex effects"""
+    try:
+        # Get font
+        font_key = props.get('font_key', list(fonts_available.keys())[0])
+        font_path = fonts_available.get(font_key, list(fonts_available.values())[0])
         
-        for i, line in enumerate(lines):
-            current_y = text_y + (i * line_height)
+        # Get font size
+        custom_font_size = props.get('font_size')
+        if custom_font_size:
+            font_size = custom_font_size
+        else:
+            width, _ = image.size if image else (1080, 1080)
+            heading_font_size = max(30, int(width / 18))
+            para_font_size = max(20, int(width / 35))
+            font_size = heading_font_size if props.get('is_heading') else para_font_size
+        
+        font_obj = ImageFont.truetype(font_path, font_size)
+        
+        # Get text and color
+        text = props.get('text', 'Sample Text')
+        color_hex = props.get('color', '#000000')
+        
+        print(f"DEBUG: Rendering text '{text}' with color '{color_hex}'")
+        
+        # Convert color to RGB
+        color_rgb = hex_to_rgb(color_hex)
+        print(f"DEBUG: Converted color to RGB: {color_rgb}")
+        
+        # Get positioning
+        width, height = image.size if image else (1080, 1080)
+        is_heading = props.get('is_heading', False)
+        
+        # Simple positioning logic
+        if is_heading:
+            x = width // 2
+            y = int(height * 0.2)  # 20% from top for heading
+            anchor = "ma"  # Middle alignment
+        else:
+            alignment = props.get('align', 'Left')
+            if alignment == "Center":
+                x = width // 2
+                anchor = "ma"
+            elif alignment == "Right":
+                x = int(width * 0.9)
+                anchor = "ra"
+            else:  # Left
+                x = int(width * 0.1)
+                anchor = "la"
+            y = int(height * 0.4)  # 40% from top for paragraph
+        
+        # Use custom position if provided
+        if 'x' in props and 'y' in props:
+            x = props['x']
+            y = props['y']
+            anchor = "la"  # Left alignment for custom positioning
+        
+        # Handle multi-line text
+        if '\n' in text:
+            lines = text.split('\n')
+            line_height = font_size + 10
+            for i, line in enumerate(lines):
+                current_y = y + (i * line_height)
+                draw.text((x, current_y), line, fill=color_rgb, font=font_obj, anchor=anchor)
+        else:
+            # Single line text
+            draw.text((x, y), text, fill=color_rgb, font=font_obj, anchor=anchor)
             
-            # Call effect renderers for each line
-            if effect == "neon":
-                apply_neon_effect(draw, line, font_obj, text_x, current_y, color, outline_color)
-            elif effect == "chrome":
-                apply_chrome_effect(draw, line, font_obj, text_x, current_y)
-            elif effect == "fire":
-                apply_fire_effect(draw, line, font_obj, text_x, current_y)
-            elif effect == "3d":
-                apply_3d_shadow_effect(draw, line, font_obj, text_x, current_y, color, outline_color)
-            elif effect == "gradient" and image:
-                apply_gradient_effect(image, draw, line, font_obj, text_x, current_y, color, outline_color)
-            else:
-                # Normal effect - use the color directly
-                color_rgb = hex_to_rgb(color)
-                draw.text((text_x, current_y), line, fill=color_rgb, font=font_obj, anchor=text_anchor)
-        return
-    
-    # Single line text or heading
-    if effect == "neon":
-        apply_neon_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
-    elif effect == "chrome":
-        apply_chrome_effect(draw, text, font_obj, text_x, text_y)
-    elif effect == "fire":
-        apply_fire_effect(draw, text, font_obj, text_x, text_y)
-    elif effect == "3d":
-        apply_3d_shadow_effect(draw, text, font_obj, text_x, text_y, color, outline_color)
-    elif effect == "gradient" and image:
-        apply_gradient_effect(image, draw, text, font_obj, text_x, text_y, color, outline_color)
-    else:
-        # Normal effect - use the color directly
-        color_rgb = hex_to_rgb(color)
-        draw.text((text_x, text_y), text, fill=color_rgb, font=font_obj, anchor=text_anchor)
+        print(f"DEBUG: Successfully rendered text at ({x}, {y})")
+        
+    except Exception as e:
+        print(f"ERROR in render_social_text_layer_simple: {e}")
 
 # --- RENDERER FOR TAB 2 ---
 def render_all_layers(base_image, layers: List[TextLayer]):
@@ -589,7 +579,8 @@ def render_social_post(size_key, bg_color, template_path, bg_type, social_layers
             props = layer.properties
             if layer.type == 'text':
                 try:
-                    render_social_text_layer(draw, props, img)
+                    # USE SIMPLIFIED RENDERER FOR TEXT
+                    render_social_text_layer_simple(draw, props, img)
                 except Exception as e:
                     print(f"Error drawing text layer {layer.id}: {e}")
             elif layer.type == 'logo':
@@ -1064,7 +1055,7 @@ def create_interface():
                 with gr.Tab("💎 Upgrade"):
                    gr.Markdown(""" ... Pricing Plans ... """) # Minified
 
-                # --- TAB 4 - SOCIAL POST CREATOR ---
+                # --- TAB 4 - SOCIAL POST CREATOR (SIMPLIFIED COLOR FIX) ---
                 with gr.Tab("📢 Social Post Creator"):
                     gr.Markdown("## 🖼️ Create Simple Social Media Posts")
                     
@@ -1076,11 +1067,10 @@ def create_interface():
                     social_effect_type_state = gr.State("normal")
                     template_selection_state = gr.State(None)
                     
-                    # NEW: Add state for paragraph positioning
-                    paragraph_x_state = gr.State(0)
-                    paragraph_y_state = gr.State(0)
-                    paragraph_positioning_mode = gr.State(False)  # Track if we're in paragraph positioning mode
-
+                    # Color states for debugging
+                    current_heading_color = gr.State("#000000")
+                    current_paragraph_color = gr.State("#000000")
+                    
                     with gr.Row():
                         with gr.Column(scale=1):
                             gr.Markdown("### 1. Setup")
@@ -1107,27 +1097,25 @@ def create_interface():
                             with gr.Row():
                                 heading_font_dd = gr.Dropdown(list(fonts_available.keys()), label="Heading Font", value=list(fonts_available.keys())[0])
                                 heading_font_size = gr.Slider(20, 200, 60, label="Heading Font Size", step=5)
-                            heading_color_picker = gr.ColorPicker(label="Heading Color", value="#000000", interactive=True)
+                            heading_color_picker = gr.ColorPicker(label="Heading Color", value="#FF0000", interactive=True)  # Changed default to RED for testing
                             
                             add_heading_btn = gr.Button("➕ Add Heading", variant="primary")
                             
-                            # Paragraph Controls - UPDATED FOR CLICK POSITIONING
+                            # Paragraph Controls
                             gr.Markdown("#### Paragraph")
                             paragraph_text = gr.Textbox(label="Paragraph Text", placeholder="Add more details here...", lines=3)
                             with gr.Row():
                                 paragraph_font_dd = gr.Dropdown(list(fonts_available.keys()), label="Paragraph Font", value=list(fonts_available.keys())[0])
                                 paragraph_font_size = gr.Slider(15, 100, 30, label="Paragraph Font Size", step=5)
-                            paragraph_color_picker = gr.ColorPicker(label="Paragraph Color", value="#000000", interactive=True)
+                            paragraph_color_picker = gr.ColorPicker(label="Paragraph Color", value="#0000FF", interactive=True)  # Changed default to BLUE for testing
                             text_alignment_radio = gr.Radio(["Left", "Center", "Right"], label="Paragraph Alignment", value="Left")
                             
-                            # NEW: Paragraph positioning controls
+                            # Paragraph positioning controls
                             with gr.Row():
                                 paragraph_x_num = gr.Number(label="Paragraph X", value=100, interactive=False)
                                 paragraph_y_num = gr.Number(label="Paragraph Y", value=100, interactive=False)
                             
-                            # UPDATED: Button to enable paragraph positioning mode
-                            enable_paragraph_position_btn = gr.Button("🎯 Click to Set Paragraph Position", variant="secondary")
-                            add_paragraph_btn = gr.Button("➕ Add Paragraph at Position", variant="primary")
+                            add_paragraph_btn = gr.Button("➕ Add Paragraph", variant="primary")
                             
                             gr.Markdown("#### Logo (Optional)")
                             logo_upload_img = gr.Image(label="Upload Logo (PNG Recommended)", type="pil", height=100)
@@ -1166,7 +1154,7 @@ def create_interface():
                             return gr.update(visible=False), gr.update(visible=True)
                     bg_type_radio.change(toggle_background_type, [bg_type_radio], [solid_color_controls, template_controls])
 
-                    # Store selected template path - FIXED VERSION
+                    # Store selected template path
                     def select_template(evt: gr.SelectData):
                         print(f"Template selected: {evt.value}, type: {type(evt.value)}")
                         if isinstance(evt.value, dict):
@@ -1177,7 +1165,7 @@ def create_interface():
                             return evt.value
                     template_gallery.select(select_template, None, [template_selection_state])
 
-                    # Create base from template - FIXED VERSION
+                    # Create base from template
                     def create_base_canvas_template(size_key, template_path):
                         print(f"Creating canvas from template: {template_path}")
                         if not template_path:
@@ -1244,19 +1232,19 @@ def create_interface():
                         return evt.index[0], evt.index[1]
                     post_preview_img.select(set_logo_pos, None, [logo_x_num, logo_y_num])
                     
-                    # NEW: Set paragraph position
+                    # Set paragraph position
                     def set_paragraph_pos(evt: gr.SelectData):
                         return evt.index[0], evt.index[1], f"✅ Paragraph position set to ({evt.index[0]}, {evt.index[1]})"
                     post_preview_img.select(set_paragraph_pos, None, [paragraph_x_num, paragraph_y_num, post_status_text])
                     
-                    # 4. Update controls from Social Preset - FIXED VERSION
+                    # 4. Update controls from Social Preset - SIMPLIFIED
                     def update_social_controls_from_preset(preset_name):
                         if preset_name in PRESETS:
                             settings = PRESETS[preset_name]
                             return (
-                                settings.get("text_color", "#000000"), 
+                                settings.get("text_color", "#FF0000"), 
                                 settings.get("effect_type", "normal"),
-                                settings.get("text_color", "#000000")  # Also update paragraph color
+                                settings.get("text_color", "#0000FF")
                             )
                         return gr.update(), gr.update(), gr.update()
                     
@@ -1266,19 +1254,12 @@ def create_interface():
                         [heading_color_picker, social_effect_type_state, paragraph_color_picker]
                     )
                     
-                    # 5. Add Heading Layer - FIXED VERSION
-                    def add_heading_element(current_layers, next_id, head_txt, font_key, font_size, txt_color, effect_type, preset_name):
+                    # 5. Add Heading Layer - SIMPLIFIED
+                    def add_heading_element(current_layers, next_id, head_txt, font_key, font_size, txt_color):
                         if not head_txt.strip(): 
                             return current_layers, next_id, "Enter heading text"
                         
-                        # Get preset settings if available
-                        outline_color = "#000000"
-                        if preset_name in PRESETS: 
-                            preset_settings = PRESETS[preset_name]
-                            outline_color = preset_settings.get('outline_color', '#000000')
-                            # Use preset effect type if not manually overridden
-                            if effect_type == "normal":
-                                effect_type = preset_settings.get('effect_type', 'normal')
+                        print(f"DEBUG: Adding heading with color: {txt_color}")
                         
                         props = {
                             'type': 'text', 
@@ -1286,34 +1267,25 @@ def create_interface():
                             'font_key': font_key, 
                             'font_size': int(font_size),
                             'color': txt_color, 
-                            'outline_color': outline_color,
-                            'is_heading': True, 
-                            'effect_type': effect_type
+                            'is_heading': True
                         }
                         
                         new_layer = SocialLayer(id=next_id, type='text', properties=props)
                         updated_layers = current_layers + [new_layer]
-                        return updated_layers, next_id + 1, "Heading added"
+                        return updated_layers, next_id + 1, f"Heading added with color {txt_color}"
                     
                     add_heading_btn.click(
                         add_heading_element,
-                        [social_layers_state, social_next_layer_id, heading_text, heading_font_dd, heading_font_size, heading_color_picker, social_effect_type_state, social_preset_dd],
+                        [social_layers_state, social_next_layer_id, heading_text, heading_font_dd, heading_font_size, heading_color_picker],
                         [social_layers_state, social_next_layer_id, post_status_text]
                     )
                     
-                    # 6. Add Paragraph Layer - FIXED VERSION
-                    def add_paragraph_element(current_layers, next_id, para_txt, font_key, font_size, txt_color, align, effect_type, preset_name, x, y):
+                    # 6. Add Paragraph Layer - SIMPLIFIED
+                    def add_paragraph_element(current_layers, next_id, para_txt, font_key, font_size, txt_color, align, x, y):
                         if not para_txt.strip(): 
                             return current_layers, next_id, "Enter paragraph text"
                         
-                        # Get preset settings if available
-                        outline_color = "#000000"
-                        if preset_name in PRESETS: 
-                            preset_settings = PRESETS[preset_name]
-                            outline_color = preset_settings.get('outline_color', '#000000')
-                            # Use preset effect type if not manually overridden
-                            if effect_type == "normal":
-                                effect_type = preset_settings.get('effect_type', 'normal')
+                        print(f"DEBUG: Adding paragraph with color: {txt_color}")
                         
                         props = {
                             'type': 'text', 
@@ -1322,20 +1294,18 @@ def create_interface():
                             'font_size': int(font_size),
                             'color': txt_color, 
                             'align': align, 
-                            'is_heading': False, 
-                            'effect_type': effect_type,
-                            'outline_color': outline_color,
-                            'x': int(x),  # Ensure integer values
-                            'y': int(y)   # Ensure integer values
+                            'is_heading': False,
+                            'x': int(x),  
+                            'y': int(y)   
                         }
                         
                         new_layer = SocialLayer(id=next_id, type='text', properties=props)
                         updated_layers = current_layers + [new_layer]
-                        return updated_layers, next_id + 1, f"Paragraph added at position ({x}, {y})"
+                        return updated_layers, next_id + 1, f"Paragraph added at position ({x}, {y}) with color {txt_color}"
                     
                     add_paragraph_btn.click(
                         add_paragraph_element,
-                        [social_layers_state, social_next_layer_id, paragraph_text, paragraph_font_dd, paragraph_font_size, paragraph_color_picker, text_alignment_radio, social_effect_type_state, social_preset_dd, paragraph_x_num, paragraph_y_num],
+                        [social_layers_state, social_next_layer_id, paragraph_text, paragraph_font_dd, paragraph_font_size, paragraph_color_picker, text_alignment_radio, paragraph_x_num, paragraph_y_num],
                         [social_layers_state, social_next_layer_id, post_status_text]
                     )
                     
@@ -1354,7 +1324,7 @@ def create_interface():
                         [social_layers_state, social_next_layer_id, post_status_text]
                     )
                     
-                    # 8. Update preview function (triggered by .change() below)
+                    # 8. Update preview function - SIMPLIFIED
                     def update_preview_and_layer_list(base_img, layers, size_key, bg_color, template_path, bg_type):
                         print(f"update_preview_and_layer_list - base_img: {base_img is not None}, layers: {len(layers)}")
                         
