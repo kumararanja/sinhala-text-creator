@@ -1,8 +1,7 @@
 """
-Sinhala Text Creator - ROBUST FONT & COLOR HANDLING
+Sinhala Text Creator - FIXED COLOR HANDLING VERSION
 ===================================================
-This version includes a fallback font to prevent startup crashes
-and uses the correct state-based color logic.
+Using direct color state management and simplified rendering
 """
 
 import gradio as gr
@@ -25,7 +24,7 @@ import glob
 # [Your existing database functions here...]
 
 # ============================================
-# FONTS & CONFIG (MODIFIED FOR ROBUSTNESS)
+# FONTS & CONFIG
 # ============================================
 FONT_PATHS = {
     "Abhaya Regular (Sinhala)": "fonts/AbhayaLibre-Regular.ttf", 
@@ -34,34 +33,18 @@ FONT_PATHS = {
     "Montserrat Bold": "fonts/Montserrat-Bold.ttf"
 }
 fonts_available = {}
-
-# Try to load custom fonts
 for name, path in FONT_PATHS.items():
     try:
         if os.path.exists(path):
-            # Test if font file is valid
-            ImageFont.truetype(path, 20) 
+            ImageFont.truetype(path, 20)
             fonts_available[name] = path
-            print(f"Loaded font: {name}")
-    except Exception as e:
-        print(f"Could not load font {name}: {e}")
-
-# **NEW FALLBACK**
+    except:
+        pass
 if not fonts_available:
-    print("WARNING: No custom fonts found in 'fonts/' folder.")
-    try:
-        # Try to load a very basic built-in font as a last resort
-        ImageFont.load_default()
-        fonts_available["Default (Fallback)"] = "DEFAULT"
-        print("Using basic fallback font.")
-    except Exception as e:
-        print(f"CRITICAL: Could not load any fonts, not even default. {e}")
-        # If this fails, the app truly cannot run.
+    fonts_available["Fallback"] = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
 # Load Templates
 template_files = glob.glob("templates/*.jpg") + glob.glob("templates/*.png") + glob.glob("templates/*.jpeg")
-if not template_files:
-    print("WARNING: No templates found in 'templates/' folder.")
 
 # ============================================
 # SIMPLIFIED COLOR SYSTEM
@@ -87,7 +70,7 @@ class SocialLayer:
     visible: bool = True
 
 # ============================================
-# DIRECT COLOR RENDERING SYSTEM (MODIFIED FOR ROBUSTNESS)
+# DIRECT COLOR RENDERING SYSTEM
 # ============================================
 
 post_sizes = {
@@ -98,7 +81,7 @@ post_sizes = {
 }
 
 def render_text_direct(draw, props, image=None):
-    """DIRECT TEXT RENDERER - Handles default font"""
+    """DIRECT TEXT RENDERER - No state, just use the color from props"""
     try:
         # Get font
         font_key = props.get('font_key', list(fonts_available.keys())[0])
@@ -107,20 +90,7 @@ def render_text_direct(draw, props, image=None):
         # Get font size
         font_size = props.get('font_size', 40)
         
-        # **NEW FONT LOADING LOGIC**
-        font_obj = None
-        if font_path == "DEFAULT":
-            try:
-                # load_default() doesn't really support size, but we try
-                font_obj = ImageFont.load_default(size=font_size)
-            except TypeError:
-                font_obj = ImageFont.load_default() # Fallback for older PIL
-        else:
-            try:
-                font_obj = ImageFont.truetype(font_path, font_size)
-            except Exception as e:
-                print(f"Error loading font {font_path}, using default: {e}")
-                font_obj = ImageFont.load_default()
+        font_obj = ImageFont.truetype(font_path, font_size)
         
         # Get text and color - DIRECT FROM PROPS
         text = props.get('text', 'Sample Text')
@@ -157,19 +127,12 @@ def render_text_direct(draw, props, image=None):
         if 'x' in props and 'y' in props:
             x = props['x']
             y = props['y']
-            anchor = "la" # Custom XY implies left-anchor
+            anchor = "la"
         
         # Handle multi-line text
         if '\n' in text:
             lines = text.split('\n')
-            # Get line height from font
-            try:
-                # This is a robust way to get line height
-                bbox = draw.textbbox((0, 0), "Agy", font=font_obj)
-                line_height = bbox[3] - bbox[1] + (font_size // 4) # Add 1/4th font size as spacing
-            except:
-                line_height = font_size + 10 # Fallback
-                
+            line_height = font_size + 10
             for i, line in enumerate(lines):
                 current_y = y + (i * line_height)
                 draw.text((x, current_y), line, fill=color_rgb, font=font_obj, anchor=anchor)
@@ -199,7 +162,6 @@ def render_social_post_direct(size_key, bg_color, template_path, bg_type, social
                     else:
                         raise FileNotFoundError("Template path is invalid")
                 except Exception as e:
-                    print(f"Template load error: {e}")
                     img = Image.new('RGBA', (width, height), bg_color)
             else:
                 if not isinstance(bg_color, str) or not bg_color.startswith('#'): 
@@ -259,7 +221,7 @@ def render_social_post_direct(size_key, bg_color, template_path, bg_type, social
         return error_img
 
 # ============================================
-# GRADIO INTERFACE (NO CHANGES NEEDED HERE)
+# GRADIO INTERFACE WITH FIXED COLOR HANDLING
 # ============================================
 
 def create_interface():
@@ -347,7 +309,7 @@ def create_interface():
                                 create_canvas_btn = gr.Button("🆕 Create Canvas", variant="secondary")
 
                             with gr.Column(visible=False) as template_controls:
-                                template_gallery = gr.Gallery(value=template_files, label="Templates", columns=3, height=120, allow_preview=False, object_fit="contain")
+                                template_gallery = gr.Gallery(value=template_files, label="Templates", columns=3, height=120, allow_preview=False)
                             
                             gr.Markdown("### 2. Add Text Elements")
                             
@@ -418,7 +380,7 @@ def create_interface():
 
                         with gr.Column(scale=2):
                             gr.Markdown("### 👀 Live Preview")
-                            post_preview_img = gr.Image(label="Post Preview", interactive=True, height=500, tool="select")
+                            post_preview_img = gr.Image(label="Post Preview", interactive=True, height=500)
                             post_status_text = gr.Textbox(label="Status", interactive=False)
                             
                             gr.Markdown("### 📋 Current Elements")
@@ -437,310 +399,299 @@ def create_interface():
                                 social_download_file = gr.File(label="Download Link", interactive=False)
                                 social_download_status = gr.Textbox(label="Status", interactive=False)
 
-                        # ============================================
-                        # FIXED COLOR HANDLING EVENT SYSTEM
-                        # ============================================
+                    # ============================================
+                    # FIXED COLOR HANDLING EVENT SYSTEM
+                    # ============================================
 
-                        # Update color states when pickers change
-                        def update_heading_color_state(color):
-                            print(f"🔄 UPDATING HEADING COLOR STATE: {color}")
-                            # Update the display
-                            display_html = f"""
-                            <div style="padding: 10px; background: #f0f0f0; border-radius: 5px; margin: 10px 0;">
-                                <strong>Current Heading Color:</strong> <span style="color: {color};">{color}</span>
-                                <div style="width: 100%; height: 20px; background: {color}; margin-top: 5px; border: 1px solid #000;"></div>
-                            </div>
-                            """
-                            return color, display_html
+                    # Update color states when pickers change
+                    def update_heading_color_state(color):
+                        print(f"🔄 UPDATING HEADING COLOR STATE: {color}")
+                        # Update the display
+                        display_html = f"""
+                        <div style="padding: 10px; background: #f0f0f0; border-radius: 5px; margin: 10px 0;">
+                            <strong>Current Heading Color:</strong> <span style="color: {color};">{color}</span>
+                            <div style="width: 100%; height: 20px; background: {color}; margin-top: 5px; border: 1px solid #000;"></div>
+                        </div>
+                        """
+                        return color, display_html
 
-                        def update_paragraph_color_state(color):
-                            print(f"🔄 UPDATING PARAGRAPH COLOR STATE: {color}")
-                            # Update the display
-                            display_html = f"""
-                            <div style="padding: 10px; background: #f0f0f0; border-radius: 5px; margin: 10px 0;">
-                                <strong>Current Paragraph Color:</strong> <span style="color: {color};">{color}</span>
-                                <div style="width: 100%; height: 20px; background: {color}; margin-top: 5px; border: 1px solid #000;"></div>
-                            </div>
-                            """
-                            return color, display_html
+                    def update_paragraph_color_state(color):
+                        print(f"🔄 UPDATING PARAGRAPH COLOR STATE: {color}")
+                        # Update the display
+                        display_html = f"""
+                        <div style="padding: 10px; background: #f0f0f0; border-radius: 5px; margin: 10px 0;">
+                            <strong>Current Paragraph Color:</strong> <span style="color: {color};">{color}</span>
+                            <div style="width: 100%; height: 20px; background: {color}; margin-top: 5px; border: 1px solid #000;"></div>
+                        </div>
+                        """
+                        return color, display_html
 
-                        # Connect color pickers to state updates
-                        heading_color_picker.change(
-                            update_heading_color_state,
-                            [heading_color_picker],
-                            [current_heading_color, heading_color_display]
-                        )
+                    # Connect color pickers to state updates
+                    heading_color_picker.change(
+                        update_heading_color_state,
+                        [heading_color_picker],
+                        [current_heading_color, heading_color_display]
+                    )
 
-                        paragraph_color_picker.change(
-                            update_paragraph_color_state,
-                            [paragraph_color_picker],
-                            [current_paragraph_color, paragraph_color_display]
-                        )
+                    paragraph_color_picker.change(
+                        update_paragraph_color_state,
+                        [paragraph_color_picker],
+                        [current_paragraph_color, paragraph_color_display]
+                    )
 
-                        # Background type toggle
-                        def toggle_background_type(bg_type):
-                            if bg_type == "Solid Color":
-                                return gr.update(visible=True), gr.update(visible=False)
-                            else:
-                                return gr.update(visible=False), gr.update(visible=True)
-                        bg_type_radio.change(toggle_background_type, [bg_type_radio], [solid_color_controls, template_controls])
+                    # Background type toggle
+                    def toggle_background_type(bg_type):
+                        if bg_type == "Solid Color":
+                            return gr.update(visible=True), gr.update(visible=False)
+                        else:
+                            return gr.update(visible=False), gr.update(visible=True)
+                    bg_type_radio.change(toggle_background_type, [bg_type_radio], [solid_color_controls, template_controls])
 
-                        # Template selection
-                        def select_template(evt: gr.SelectData):
-                            # This handles the gallery's output format
-                            template_path = evt.value
+                    # Template selection
+                    def select_template(evt: gr.SelectData):
+                        if isinstance(evt.value, dict):
+                            return evt.value.get('name') or evt.value.get('data') or list(evt.value.values())[0]
+                        return evt.value
+                    template_gallery.select(select_template, None, [template_selection_state])
+
+                    # Create canvas from template
+                    def create_base_canvas_template(size_key, template_path):
+                        if not template_path:
+                            return None, None, [], 1, "No template selected.", "No elements added yet"
+                        
+                        try:
+                            width, height = post_sizes[size_key]
                             if isinstance(template_path, dict):
-                                # Use 'name' if available, otherwise 'data'
                                 template_path = template_path.get('name') or template_path.get('data') or list(template_path.values())[0]
                             
-                            print(f"Template selected: {template_path}")
-                            return template_path
-                        template_gallery.select(select_template, None, [template_selection_state], queue=False)
-
-                        # Create canvas from template
-                        def create_base_canvas_template(size_key, template_path):
-                            if not template_path:
-                                return None, None, [], 1, "No template selected.", "No elements added yet"
-                            
-                            try:
-                                width, height = post_sizes[size_key]
-                                
-                                if not (isinstance(template_path, str) and os.path.exists(template_path)):
-                                    print(f"Invalid template path: {template_path}")
-                                    raise FileNotFoundError("Template file not found or path is invalid")
-
+                            if isinstance(template_path, str) and os.path.exists(template_path):
                                 img = Image.open(template_path).convert('RGBA')
                                 img = img.resize((width, height), Image.Resampling.LANCZOS)
-                                # Create a white background and paste the RGBA image onto it
                                 base_img = Image.new("RGB", img.size, (255, 255, 255))
                                 base_img.paste(img, mask=img.split()[3] if img.mode == 'RGBA' else None)
-                                
                                 return base_img, base_img, [], 1, "Template loaded!", "No elements added yet"
-                            except Exception as e:
-                                print(f"Error loading template: {e}")
-                                width, height = post_sizes.get(size_key, (1080, 1080))
-                                img = Image.new('RGB', (width, height), "#FFFFFF")
-                                return img, img, [], 1, f"Error: {e}", "Error"
+                            else:
+                                raise FileNotFoundError("Template not found")
+                        except Exception as e:
+                            width, height = post_sizes[size_key]
+                            img = Image.new('RGB', (width, height), "#FFFFFF")
+                            return img, img, [], 1, "Error loading template", "No elements added yet"
 
-                        # This event is triggered when the *state* changes, which happens *after* gallery.select
-                        template_selection_state.change(
-                            create_base_canvas_template,
-                            [post_size_dd, template_selection_state],
-                            [social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list]
-                        )
+                    template_selection_state.change(
+                        create_base_canvas_template,
+                        [post_size_dd, template_selection_state],
+                        [social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list]
+                    )
 
-                        # Create canvas from color
-                        def create_base_canvas_color(size_key, bg_color):
-                            try:
-                                width, height = post_sizes[size_key]
+                    # Create canvas from color
+                    def create_base_canvas_color(size_key, bg_color):
+                        try:
+                            width, height = post_sizes[size_key]
+                            if not isinstance(bg_color, str) or not bg_color.startswith('#'): 
+                                bg_color = "#FFFFFF"
+                            img = Image.new('RGB', (width, height), bg_color)
+                            return img, img, [], 1, "Canvas created!", "No elements added yet"
+                        except Exception as e:
+                            return None, None, [], 1, f"Error: {e}", "Error"
+                    create_canvas_btn.click(
+                        create_base_canvas_color,
+                        [post_size_dd, bg_color_picker],
+                        [social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list]
+                    )
+
+                    # Store logo
+                    def store_logo(img):
+                        return img
+                    logo_upload_img.upload(store_logo, [logo_upload_img], [logo_image_state])
+
+                    # Position setting
+                    def set_element_pos(evt: gr.SelectData):
+                        return evt.index[0], evt.index[1], f"Position set: ({evt.index[0]}, {evt.index[1]})"
+                    post_preview_img.select(set_element_pos, None, [paragraph_x_num, paragraph_y_num, post_status_text])
+
+                    # ============================================
+                    # FIXED ELEMENT ADDING FUNCTIONS
+                    # ============================================
+
+                    # ADD HEADING - Uses current_heading_color state
+                    def add_heading_element_fixed(current_layers, next_id, head_txt, font_key, font_size, heading_color_state):
+                        if not head_txt.strip(): 
+                            return current_layers, next_id, "Enter heading text"
+                        
+                        print(f"🎯 ADDING HEADING: '{head_txt}' with ACTUAL COLOR: '{heading_color_state}'")
+                        
+                        props = {
+                            'type': 'text', 
+                            'text': head_txt, 
+                            'font_key': font_key, 
+                            'font_size': int(font_size),
+                            'color': heading_color_state,  # Use the state value directly
+                            'is_heading': True
+                        }
+                        
+                        new_layer = SocialLayer(id=next_id, type='text', properties=props)
+                        updated_layers = current_layers + [new_layer]
+                        return updated_layers, next_id + 1, f"✅ Heading added with color {heading_color_state}"
+
+                    add_heading_btn.click(
+                        add_heading_element_fixed,
+                        [social_layers_state, social_next_layer_id, heading_text, heading_font_dd, heading_font_size, current_heading_color],
+                        [social_layers_state, social_next_layer_id, post_status_text]
+                    )
+
+                    # ADD PARAGRAPH - Uses current_paragraph_color state
+                    def add_paragraph_element_fixed(current_layers, next_id, para_txt, font_key, font_size, paragraph_color_state, align, x, y):
+                        if not para_txt.strip(): 
+                            return current_layers, next_id, "Enter paragraph text"
+                        
+                        print(f"🎯 ADDING PARAGRAPH: '{para_txt}' with ACTUAL COLOR: '{paragraph_color_state}'")
+                        
+                        props = {
+                            'type': 'text', 
+                            'text': para_txt, 
+                            'font_key': font_key, 
+                            'font_size': int(font_size),
+                            'color': paragraph_color_state,  # Use the state value directly
+                            'align': align, 
+                            'is_heading': False,
+                            'x': int(x),  
+                            'y': int(y)   
+                        }
+                        
+                        new_layer = SocialLayer(id=next_id, type='text', properties=props)
+                        updated_layers = current_layers + [new_layer]
+                        return updated_layers, next_id + 1, f"✅ Paragraph added with color {paragraph_color_state}"
+
+                    add_paragraph_btn.click(
+                        add_paragraph_element_fixed,
+                        [social_layers_state, social_next_layer_id, paragraph_text, paragraph_font_dd, paragraph_font_size, current_paragraph_color, text_alignment_radio, paragraph_x_num, paragraph_y_num],
+                        [social_layers_state, social_next_layer_id, post_status_text]
+                    )
+
+                    # Add logo
+                    def add_logo_element(current_layers, next_id, logo_obj, size_str, x, y):
+                        if logo_obj is None: 
+                            return current_layers, next_id, "Upload a logo first"
+                        current_layers = [lyr for lyr in current_layers if lyr.type != 'logo']
+                        props = {'type': 'logo', 'logo_obj': logo_obj, 'size_str': size_str, 'x': x, 'y': y}
+                        new_layer = SocialLayer(id=next_id, type='logo', properties=props)
+                        updated_layers = current_layers + [new_layer]
+                        return updated_layers, next_id + 1, "✅ Logo added"
+                    add_logo_btn.click(
+                        add_logo_element,
+                        [social_layers_state, social_next_layer_id, logo_image_state, logo_size_radio, logo_x_num, logo_y_num],
+                        [social_layers_state, social_next_layer_id, post_status_text]
+                    )
+
+                    # ============================================
+                    # FIXED PREVIEW UPDATE
+                    # ============================================
+
+                    def update_preview_fixed(base_img, layers, size_key, bg_color, template_path, bg_type):
+                        print(f"🔄 UPDATING PREVIEW with {len(layers)} layers")
+                        
+                        # Debug: Print all layer colors
+                        for i, layer in enumerate(layers):
+                            if layer.type == 'text':
+                                props = layer.properties
+                                print(f"   📝 Layer {i}: '{props.get('text')}' with color '{props.get('color')}'")
+                        
+                        if base_img is not None:
+                            rendered_image = render_social_post_direct(size_key, bg_color, template_path, bg_type, layers, base_img)
+                            layer_text = format_social_layers(layers)
+                            return rendered_image, layer_text
+                        
+                        try:
+                            width, height = post_sizes[size_key]
+                            if bg_type == "Template" and template_path:
+                                if isinstance(template_path, dict):
+                                    template_path = template_path.get('name') or template_path.get('data') or list(template_path.values())[0]
+                                
+                                if isinstance(template_path, str) and os.path.exists(template_path):
+                                    base_img = Image.open(template_path).convert('RGBA')
+                                    base_img = base_img.resize((width, height), Image.Resampling.LANCZOS)
+                                    base_img_rgb = Image.new("RGB", base_img.size, (255, 255, 255))
+                                    base_img_rgb.paste(base_img, mask=base_img.split()[3] if base_img.mode == 'RGBA' else None)
+                                    base_img = base_img_rgb
+                                else:
+                                    base_img = Image.new('RGB', (width, height), "#FFFFFF")
+                            else:
                                 if not isinstance(bg_color, str) or not bg_color.startswith('#'): 
                                     bg_color = "#FFFFFF"
-                                img = Image.new('RGB', (width, height), bg_color)
-                                return img, img, [], 1, "Canvas created!", "No elements added yet"
-                            except Exception as e:
-                                return None, None, [], 1, f"Error: {e}", "Error"
-                        create_canvas_btn.click(
-                            create_base_canvas_color,
-                            [post_size_dd, bg_color_picker],
-                            [social_post_base_image, post_preview_img, social_layers_state, social_next_layer_id, post_status_text, social_layers_list]
-                        )
-
-                        # Store logo
-                        def store_logo(img):
-                            return img
-                        logo_upload_img.upload(store_logo, [logo_upload_img], [logo_image_state])
-
-                        # Position setting
-                        def set_element_pos(evt: gr.SelectData):
-                            return evt.index[0], evt.index[1], f"Position set: ({evt.index[0]}, {evt.index[1]})"
-                        post_preview_img.select(set_element_pos, None, [paragraph_x_num, paragraph_y_num, post_status_text])
-
-                        # ============================================
-                        # FIXED ELEMENT ADDING FUNCTIONS
-                        # ============================================
-
-                        # ADD HEADING - Uses current_heading_color state
-                        def add_heading_element_fixed(current_layers, next_id, head_txt, font_key, font_size, heading_color_state):
-                            if not head_txt.strip(): 
-                                return current_layers, next_id, "Enter heading text"
+                                base_img = Image.new('RGB', (width, height), bg_color)
                             
-                            print(f"🎯 ADDING HEADING: '{head_txt}' with ACTUAL COLOR: '{heading_color_state}'")
+                            rendered_image = render_social_post_direct(size_key, bg_color, template_path, bg_type, layers, base_img)
+                            layer_text = format_social_layers(layers)
+                            return rendered_image, layer_text
                             
-                            props = {
-                                'type': 'text', 
-                                'text': head_txt, 
-                                'font_key': font_key, 
-                                'font_size': int(font_size),
-                                'color': heading_color_state,  # Use the state value directly
-                                'is_heading': True
-                            }
-                            
-                            new_layer = SocialLayer(id=next_id, type='text', properties=props)
-                            updated_layers = current_layers + [new_layer]
-                            return updated_layers, next_id + 1, f"✅ Heading added with color {heading_color_state}"
+                        except Exception as e:
+                            print(f"Preview error: {e}")
+                            error_img = Image.new('RGB', (300, 100), color='gray')
+                            draw = ImageDraw.Draw(error_img)
+                            draw.text((10,10), f"Error: {str(e)[:50]}", fill="white")
+                            return error_img, format_social_layers(layers)
+                    
+                    # Update preview on layer changes
+                    social_layers_state.change(
+                         update_preview_fixed,
+                         [social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                         [post_preview_img, social_layers_list]
+                    )
+                    
+                    # Also update on background changes
+                    post_size_dd.change(
+                         update_preview_fixed,
+                         [social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                         [post_preview_img, social_layers_list]
+                    )
+                    
+                    bg_color_picker.change(
+                         update_preview_fixed,
+                         [social_post_base_image, social_layers_state, post_size_dd, bg_color_picker, template_selection_state, bg_type_radio],
+                         [post_preview_img, social_layers_list]
+                    )
 
-                        add_heading_btn.click(
-                            add_heading_element_fixed,
-                            [social_layers_state, social_next_layer_id, heading_text, heading_font_dd, heading_font_size, current_heading_color],
-                            [social_layers_state, social_next_layer_id, post_status_text]
-                        )
-
-                        # ADD PARAGRAPH - Uses current_paragraph_color state
-                        def add_paragraph_element_fixed(current_layers, next_id, para_txt, font_key, font_size, paragraph_color_state, align, x, y):
-                            if not para_txt.strip(): 
-                                return current_layers, next_id, "Enter paragraph text"
+                    # Layer management
+                    def remove_last_social_layer(layers):
+                        if not layers: 
+                            return layers, "No elements to remove"
+                        return layers[:-1], "✅ Removed last element"
+                    social_remove_last_btn.click(remove_last_social_layer, [social_layers_state], [social_layers_state, post_status_text])
+                    
+                    def clear_all_social_layers():
+                        return [], "✅ Cleared all elements"
+                    social_clear_all_btn.click(clear_all_social_layers, [], [social_layers_state, post_status_text])
+                    
+                    # Download
+                    def save_image_fixed(image_data, format_choice):
+                        if image_data is None: return None, "❌ No image to save"
+                        try:
+                            suffix = '.png' if format_choice == "PNG" else '.jpg'
+                            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
                             
-                            print(f"🎯 ADDING PARAGRAPH: '{para_txt}' with ACTUAL COLOR: '{paragraph_color_state}'")
+                            if isinstance(image_data, Image.Image):
+                                img_to_save = image_data
+                            else:
+                                return None, "❌ Invalid image data"
                             
-                            props = {
-                                'type': 'text', 
-                                'text': para_txt, 
-                                'font_key': font_key, 
-                                'font_size': int(font_size),
-                                'color': paragraph_color_state,  # Use the state value directly
-                                'align': align, 
-                                'is_heading': False,
-                                'x': int(x),  
-                                'y': int(y)   
-                            }
+                            if img_to_save.mode != 'RGB':
+                                img_to_save = img_to_save.convert('RGB')
                             
-                            new_layer = SocialLayer(id=next_id, type='text', properties=props)
-                            updated_layers = current_layers + [new_layer]
-                            return updated_layers, next_id + 1, f"✅ Paragraph added with color {paragraph_color_state}"
-
-                        add_paragraph_btn.click(
-                            add_paragraph_element_fixed,
-                            [social_layers_state, social_next_layer_id, paragraph_text, paragraph_font_dd, paragraph_font_size, current_paragraph_color, text_alignment_radio, paragraph_x_num, paragraph_y_num],
-                            [social_layers_state, social_next_layer_id, post_status_text]
-                        )
-
-                        # Add logo
-                        def add_logo_element(current_layers, next_id, logo_obj, size_str, x, y):
-                            if logo_obj is None: 
-                                return current_layers, next_id, "Upload a logo first"
-                            # This removes any existing logo, as we only allow one
-                            current_layers = [lyr for lyr in current_layers if lyr.type != 'logo']
-                            props = {'type': 'logo', 'logo_obj': logo_obj, 'size_str': size_str, 'x': x, 'y': y}
-                            new_layer = SocialLayer(id=next_id, type='logo', properties=props)
-                            updated_layers = current_layers + [new_layer]
-                            return updated_layers, next_id + 1, "✅ Logo added"
-                        add_logo_btn.click(
-                            add_logo_element,
-                            [social_layers_state, social_next_layer_id, logo_image_state, logo_size_radio, logo_x_num, logo_y_num],
-                            [social_layers_state, social_next_layer_id, post_status_text]
-                        )
-
-                        # ============================================
-                        # FIXED PREVIEW UPDATE
-                        # ============================================
-
-                        def update_preview_fixed(base_img, layers, size_key, bg_color, template_path, bg_type):
-                            print(f"🔄 UPDATING PREVIEW with {len(layers)} layers")
-                            
-                            # Debug: Print all layer colors
-                            for i, layer in enumerate(layers):
-                                if layer.type == 'text':
-                                    props = layer.properties
-                                    print(f"    📝 Layer {i}: '{props.get('text')}' with color '{props.get('color')}'")
-                            
-                            # If we have a base image in state, use it
-                            if base_img is not None:
-                                rendered_image = render_social_post_direct(size_key, bg_color, template_path, bg_type, layers, base_img)
-                                layer_text = format_social_layers(layers)
-                                return rendered_image, layer_text
-                            
-                            # If no base_img, create one (e.g., on first load)
-                            try:
-                                width, height = post_sizes[size_key]
-                                if bg_type == "Template" and template_path:
-                                    if isinstance(template_path, dict):
-                                        template_path = template_path.get('name') or template_path.get('data') or list(template_path.values())[0]
-                                    
-                                    if isinstance(template_path, str) and os.path.exists(template_path):
-                                        base_img_pil = Image.open(template_path).convert('RGBA')
-                                        base_img_pil = base_img_pil.resize((width, height), Image.Resampling.LANCZOS)
-                                        base_img_rgb = Image.new("RGB", base_img_pil.size, (255, 255, 255))
-                                        base_img_rgb.paste(base_img_pil, mask=base_img_pil.split()[3] if base_img_pil.mode == 'RGBA' else None)
-                                        base_img = base_img_rgb
-                                    else:
-                                        base_img = Image.new('RGB', (width, height), "#FFFFFF")
-                                else:
-                                    if not isinstance(bg_color, str) or not bg_color.startswith('#'): 
-                                        bg_color = "#FFFFFF"
-                                    base_img = Image.new('RGB', (width, height), bg_color)
+                            if format_choice == "PNG":
+                                img_to_save.save(temp_file.name, format="PNG")
+                            else:
+                                img_to_save.save(temp_file.name, format="JPEG", quality=95)
                                 
-                                rendered_image = render_social_post_direct(size_key, bg_color, template_path, bg_type, layers, base_img)
-                                layer_text = format_social_layers(layers)
-                                return rendered_image, layer_text
-                                
-                            except Exception as e:
-                                print(f"Preview error: {e}")
-                                error_img = Image.new('RGB', (300, 100), color='gray')
-                                draw = ImageDraw.Draw(error_img)
-                                draw.text((10,10), f"Error: {str(e)[:50]}", fill="white")
-                                return error_img, format_social_layers(layers)
-                        
-                        # A list of all components that should trigger a preview refresh
-                        preview_triggers = [
-                            social_post_base_image, 
-                            social_layers_state, 
-                            post_size_dd, 
-                            bg_color_picker, 
-                            template_selection_state, 
-                            bg_type_radio
-                        ]
-                        
-                        # Update preview on ANY change to the triggers
-                        for trigger in preview_triggers:
-                            trigger.change(
-                                 update_preview_fixed,
-                                 preview_triggers,
-                                 [post_preview_img, social_layers_list]
-                            )
+                            temp_file.close()
+                            return temp_file.name, "✅ Ready to download!"
+                        except Exception as e:
+                            return None, f"❌ Save error: {e}"
 
-                        # Layer management
-                        def remove_last_social_layer(layers):
-                            if not layers: 
-                                return layers, "No elements to remove"
-                            return layers[:-1], "✅ Removed last element"
-                        social_remove_last_btn.click(remove_last_social_layer, [social_layers_state], [social_layers_state, post_status_text])
-                        
-                        def clear_all_social_layers():
-                            return [], "✅ Cleared all elements"
-                        social_clear_all_btn.click(clear_all_social_layers, [], [social_layers_state, post_status_text])
-                        
-                        # Download
-                        def save_image_fixed(image_data, format_choice):
-                            if image_data is None: return None, "❌ No image to save"
-                            try:
-                                suffix = '.png' if format_choice == "PNG" else '.jpg'
-                                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-                                
-                                if isinstance(image_data, Image.Image):
-                                    img_to_save = image_data
-                                elif isinstance(image_data, np.ndarray):
-                                    img_to_save = Image.fromarray(image_data)
-                                else:
-                                    return None, "❌ Invalid image data"
-                                
-                                if img_to_save.mode != 'RGB':
-                                    img_to_save = img_to_save.convert('RGB')
-                                
-                                if format_choice == "PNG":
-                                    img_to_save.save(temp_file.name, format="PNG")
-                                else:
-                                    img_to_save.save(temp_file.name, format="JPEG", quality=95)
-                                    
-                                temp_file.close()
-                                return temp_file.name, "✅ Ready to download!"
-                            except Exception as e:
-                                return None, f"❌ Save error: {e}"
-
-                        social_prepare_download_btn.click(
-                            save_image_fixed,
-                            [post_preview_img, social_format_choice],
-                            [social_download_file, social_download_status]
-                        )
+                    social_prepare_download_btn.click(
+                        save_image_fixed,
+                        [post_preview_img, social_format_choice],
+                        [social_download_file, social_download_status]
+                    )
 
         # Format layers function
         def format_social_layers(social_layers: List[SocialLayer]) -> str:
@@ -761,7 +712,6 @@ def create_interface():
             return "\n".join(lines)
 
         # [Rest of your existing event handlers for auth, etc.]
-        # You would paste your login_btn.click, reg_btn.click, etc. here
 
     return demo
 
@@ -770,11 +720,5 @@ def create_interface():
 # ============================================
 
 if __name__ == "__main__":
-    # Ensure fonts and templates folders exist, or at least warn the user
-    if not os.path.exists("fonts"):
-        print("INFO: 'fonts' directory not found. Only default font will be available.")
-    if not os.path.exists("templates"):
-        print("INFO: 'templates' directory not found. No templates will be available.")
-        
     demo = create_interface()
     demo.launch(server_name="0.0.0.0", server_port=8000)
